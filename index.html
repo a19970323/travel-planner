@@ -25,7 +25,8 @@
                         'deep-blue': '#1565C0',
                         'text-dark': '#37474F',
                         'text-light': '#78909C',
-                        'accent': '#FF7043'
+                        'accent': '#FF7043',
+                        'card-blue': '#0D47A1'
                     },
                     fontFamily: {
                         sans: ['Noto Sans TC', 'sans-serif'],
@@ -38,7 +39,6 @@
         body {
             font-family: 'Noto Sans TC', sans-serif;
             background-color: #E3F2FD;
-            /* Extended from banner bg */
             -webkit-tap-highlight-color: transparent;
         }
 
@@ -52,9 +52,14 @@
         }
 
         .glass-panel {
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .blue-card {
+            background: linear-gradient(135deg, #1565C0 0%, #0D47A1 100%);
+            color: white;
         }
 
         /* Mobile-like card transitions */
@@ -68,17 +73,27 @@
             opacity: 0;
             transform: translateY(20px);
         }
+
+        .fade-enter-active,
+        .fade-leave-active {
+            transition: opacity 0.3s;
+        }
+
+        .fade-enter-from,
+        .fade-leave-to {
+            opacity: 0;
+        }
     </style>
 </head>
 
 <body class="text-text-dark">
-    <div id="app" class="max-w-md mx-auto min-h-screen bg-snow-blue shadow-2xl relative overflow-hidden">
+    <div id="app" class="max-w-md mx-auto min-h-screen bg-snow-blue shadow-2xl relative overflow-hidden flex flex-col">
 
         <!-- Header Section -->
-        <header class="relative z-10">
-            <!-- Banner Image Container (Height 250px) -->
-            <div class="h-[250px] w-full overflow-hidden relative">
-                <img src="./images/banner.png?v=2" alt="Travel Banner" class="w-full h-full object-cover object-center">
+        <header class="relative z-10 shrink-0">
+            <!-- Banner Image Container - Fixed Height 300px -->
+            <div class="h-[300px] w-full overflow-hidden relative">
+                <img src="./images/banner.png?v=3" alt="Travel Banner" class="w-full h-full object-cover object-bottom">
 
                 <!-- Floating Tabs (Bottom Right of Banner) -->
                 <div class="absolute bottom-12 right-4 flex space-x-3">
@@ -96,13 +111,14 @@
         </header>
 
         <!-- Main Content Area -->
-        <main class="relative z-20 px-4 pb-24 -mt-4 min-h-[60vh]">
+        <main class="relative z-20 px-4 pb-24 -mt-2 flex-grow overflow-y-auto hide-scrollbar">
 
             <!-- Tab: Itinerary (每日行程) -->
             <transition name="card" mode="out-in">
                 <div v-if="currentTab === 'itinerary'" key="itinerary">
                     <!-- Date Selector -->
-                    <div class="flex overflow-x-auto hide-scrollbar space-x-4 pb-4 mb-2">
+                    <div
+                        class="flex overflow-x-auto hide-scrollbar space-x-4 pb-4 mb-2 sticky top-0 bg-snow-blue/90 z-30 pt-2 backdrop-blur-sm">
                         <button v-for="(day, index) in days" :key="index" @click="currentDayIndex = index" :class="[
                                 'flex flex-col items-center min-w-[60px] p-2 rounded-2xl transition-colors',
                                 currentDayIndex === index ? 'bg-deep-blue text-white shadow-md' : 'bg-white text-text-light'
@@ -112,7 +128,7 @@
                         </button>
                     </div>
 
-                    <!-- Weather Widget for the 1st item of the day -->
+                    <!-- Weather Widget -->
                     <div
                         class="bg-gradient-to-r from-blue-400 to-blue-300 text-white p-4 rounded-2xl shadow-lg mb-6 flex items-center justify-between">
                         <div>
@@ -127,93 +143,53 @@
 
                     <!-- Itinerary List -->
                     <div class="space-y-4">
-                        <div v-for="(item, index) in currentDayItinerary" :key="item.id" class="relative group">
+                        <div v-for="(item, index) in currentDayItinerary" :key="item.id || index"
+                            class="relative group">
 
-                            <!-- Travel Time (if not first item) -->
-                            <div v-if="index > 0"
-                                class="flex justify-center items-center py-2 text-text-light text-xs font-medium">
-                                <div class="h-8 w-0.5 bg-gray-300 absolute -top-4 left-1/2 -ml-px z-0"></div>
-                                <div class="bg-snow-blue px-2 z-10 flex items-center space-x-1">
-                                    <i :class="getTransportIcon(item.transportType)"></i>
-                                    <span>{{ item.transportTime }} min</span>
-                                </div>
-                            </div>
-                            <!-- First item travel time (from hotel) -->
-                            <div v-else
-                                class="flex justify-center items-center py-2 text-text-light text-xs font-medium">
-                                <div class="bg-snow-blue px-2 z-10 flex items-center space-x-1">
-                                    <i class="fas fa-hotel"></i>
-                                    <i class="fas fa-arrow-right text-[10px]"></i>
-                                    <i :class="getTransportIcon(item.transportType)"></i>
-                                    <span>{{ item.transportTime }} min</span>
-                                </div>
+                            <!-- Time Connector -->
+                            <div v-if="index > 0" class="flex justify-center items-center py-2">
+                                <div class="h-6 w-0.5 bg-gray-300"></div>
                             </div>
 
                             <!-- Card -->
-                            <div
-                                class="glass-panel p-4 rounded-2xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
-                                <!-- Drag Handle (Visual only for now) -->
-                                <div class="absolute right-0 top-0 p-2 opacity-20 cursor-move">
-                                    <i class="fas fa-grip-vertical"></i>
-                                </div>
+                            <div :class="[
+                                'p-4 rounded-2xl shadow-sm relative overflow-hidden border-l-4',
+                                item.category === '航班' ? 'bg-blue-50 border-accent' : 'glass-panel border-transparent'
+                                ]">
 
-                                <!-- Special Style for Flight (if type is flight) -->
-                                <div v-if="item.type === 'flight'" class="border-l-4 border-accent pl-3">
-                                    <h3 class="font-bold text-lg text-deep-blue">{{ item.name }}</h3>
-                                    <div class="text-sm mt-1 space-y-1">
-                                        <div class="flex justify-between">
-                                            <span>{{ item.time }}</span>
-                                            <span class="font-mono bg-blue-100 text-blue-800 px-2 rounded">{{
-                                                item.flightNo }}</span>
-                                        </div>
-                                        <div class="text-gray-500">{{ item.note }}</div>
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="font-mono font-bold text-deep-blue text-lg">{{ item.time }}</span>
+                                        <span class="text-xs px-2 py-0.5 bg-gray-100 rounded-full text-gray-500">{{
+                                            item.category }}</span>
+                                    </div>
+                                    <div class="flex space-x-2">
+                                        <button
+                                            v-if="item.name.includes('Skyliner') || item.name.includes('機場') || item.category === '住宿' || item.category === '美食' || item.category === '景點'"
+                                            @click="openGoogleMaps(item.name)"
+                                            class="text-blue-400 hover:text-deep-blue">
+                                            <i class="fas fa-location-arrow"></i>
+                                        </button>
                                     </div>
                                 </div>
 
-                                <!-- Standard Card -->
-                                <div v-else class="pl-1">
-                                    <div class="flex justify-between items-start">
-                                        <span
-                                            class="bg-blue-100 text-deep-blue text-[10px] px-2 py-0.5 rounded-full font-bold mb-1 inline-block">
-                                            {{ item.category }}
-                                        </span>
-                                        <div class="flex space-x-2">
-                                            <button @click="moveItem(index, -1)"
-                                                class="text-gray-300 hover:text-deep-blue px-1"><i
-                                                    class="fas fa-chevron-up"></i></button>
-                                            <button @click="moveItem(index, 1)"
-                                                class="text-gray-300 hover:text-deep-blue px-1"><i
-                                                    class="fas fa-chevron-down"></i></button>
-                                            <button @click="openGoogleMaps(item.name)"
-                                                class="text-blue-400 hover:text-deep-blue"><i
-                                                    class="fas fa-location-arrow"></i></button>
-                                            <button @click="deleteItem(index)"
-                                                class="text-red-300 hover:text-red-500"><i
-                                                    class="fas fa-trash"></i></button>
-                                        </div>
-                                    </div>
+                                <h3 class="font-bold text-lg text-text-dark">{{ item.name }}</h3>
+                                <div class="text-sm text-gray-600 mt-1">{{ item.location }}</div>
 
-                                    <h3 class="font-bold text-lg text-text-dark">{{ item.name }}</h3>
-
-                                    <div class="text-sm text-gray-600 mt-2 space-y-1">
-                                        <div v-if="item.hours"><i class="far fa-clock w-4 text-center mr-1"></i> {{
-                                            item.hours }}</div>
-                                        <div v-if="item.ticket && item.category === '景點'"><i
-                                                class="fas fa-ticket-alt w-4 text-center mr-1"></i> {{ item.ticket }}
-                                        </div>
-                                        <div v-if="item.note" class="mt-2 text-xs bg-white/50 p-2 rounded">{{ item.note
-                                            }}</div>
+                                <!-- Note / Price -->
+                                <div v-if="item.note || item.price"
+                                    class="mt-2 text-xs bg-white/50 p-2 rounded flex flex-col gap-1">
+                                    <div v-if="item.note" class="text-gray-700">📌 {{ item.note }}</div>
+                                    <div v-if="item.price" class="text-orange-500 font-bold">💰 預算: {{ item.price }}
                                     </div>
                                 </div>
                             </div>
                         </div>
+                        <!-- Empty State -->
+                        <div v-if="currentDayItinerary.length === 0" class="text-center text-gray-400 py-10">
+                            尚未安排行程
+                        </div>
                     </div>
-
-                    <!-- Add Button -->
-                    <button @click="showAddItineraryModal = true"
-                        class="fixed bottom-6 right-6 w-14 h-14 bg-deep-blue text-white rounded-full shadow-2xl flex items-center justify-center text-2xl z-50 hover:scale-110 transition-transform">
-                        <i class="fas fa-plus"></i>
-                    </button>
                 </div>
             </transition>
 
@@ -222,66 +198,77 @@
                 <div v-if="currentTab === 'info'" key="info" class="space-y-6">
                     <h2 class="text-2xl font-bold text-deep-blue mb-4">旅遊資訊</h2>
 
-                    <!-- Exchange Rate -->
-                    <div class="glass-panel p-5 rounded-2xl">
-                        <h3 class="font-bold mb-3 flex items-center"><i class="fas fa-coins text-yellow-500 mr-2"></i>
-                            匯率換算</h3>
-                        <div class="flex items-center space-x-2">
-                            <input type="number" v-model="exchangeAmount" placeholder="外幣"
-                                class="w-full p-2 rounded-lg bg-white/50 border-none focus:ring-2 focus:ring-blue-300 outline-none">
-                            <i class="fas fa-arrow-right text-gray-400"></i>
-                            <div class="w-full p-2 font-bold text-right text-deep-blue">
-                                NT$ {{ calculatedTWD }}
+                    <!-- Exchange Rate (New Blue Design) -->
+                    <div class="blue-card p-6 rounded-3xl shadow-xl">
+                        <h3 class="font-bold mb-4 flex items-center text-lg"><i class="fas fa-calculator mr-2"></i> 匯率換算
+                        </h3>
+
+                        <div class="flex items-center justify-between gap-4 mb-2">
+                            <div class="flex-1">
+                                <div class="text-xs opacity-70 mb-1">JPY (日幣)</div>
+                                <input type="number" v-model="exchangeAmount"
+                                    class="w-full bg-white/20 text-white text-xl font-bold p-3 rounded-xl border border-white/30 focus:outline-none focus:bg-white/30 placeholder-white/50"
+                                    placeholder="0">
+                            </div>
+                            <i class="fas fa-exchange-alt opacity-70 mt-4"></i>
+                            <div class="flex-1">
+                                <div class="text-xs opacity-70 mb-1">TWD (台幣)</div>
+                                <div
+                                    class="w-full bg-white/10 text-white text-xl font-bold p-3 rounded-xl border border-white/10">
+                                    $ {{ calculatedTWD }}
+                                </div>
                             </div>
                         </div>
-                        <div class="text-xs text-right mt-1 text-gray-400">匯率: {{ exchangeRate }}</div>
+                        <div class="text-right text-xs opacity-60">匯率基準: {{ exchangeRate }}</div>
                     </div>
 
-                    <!-- Flights Info -->
-                    <div class="glass-panel p-5 rounded-2xl">
-                        <h3 class="font-bold mb-3 flex items-center"><i class="fas fa-plane text-blue-500 mr-2"></i>
-                            航班資訊</h3>
+                    <!-- Flights Info (Updated Scoot) -->
+                    <div class="glass-panel p-5 rounded-2xl border-l-4 border-yellow-400">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="font-bold flex items-center"><i class="fas fa-plane text-yellow-500 mr-2"></i> 酷航
+                                Scoot</h3>
+                            <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">含20kg託運</span>
+                        </div>
 
                         <!-- Outbound -->
                         <div class="mb-4 pb-4 border-b border-gray-100">
-                            <div class="flex justify-between text-sm font-bold text-gray-500 mb-1">去程 TPE <i
-                                    class="fas fa-arrow-right mx-1"></i> NRT</div>
+                            <div class="flex justify-between text-sm font-bold text-gray-500 mb-1">去程 1/30 (五)</div>
                             <div class="flex justify-between items-center">
-                                <div class="text-2xl font-bold">08:50</div>
-                                <div class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">3h 20m</div>
-                                <div class="text-2xl font-bold">13:10</div>
+                                <div class="text-center">
+                                    <div class="text-2xl font-bold text-deep-blue">06:40</div>
+                                    <div class="text-xs text-gray-400">TPE 台北</div>
+                                </div>
+                                <div class="flex flex-col items-center px-4">
+                                    <span class="text-xs text-blue-500 font-mono mb-1">TR898</span>
+                                    <i class="fas fa-long-arrow-alt-right text-gray-300"></i>
+                                    <span class="text-[10px] text-gray-400 mt-1">3h 05m</span>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-2xl font-bold text-deep-blue">10:45</div>
+                                    <div class="text-xs text-gray-400">NRT 成田</div>
+                                </div>
                             </div>
-                            <div class="text-xs text-blue-500 mt-1 font-mono">JL0802</div>
                         </div>
 
                         <!-- Inbound -->
                         <div>
-                            <div class="flex justify-between text-sm font-bold text-gray-500 mb-1">回程 NRT <i
-                                    class="fas fa-arrow-right mx-1"></i> TPE</div>
+                            <div class="flex justify-between text-sm font-bold text-gray-500 mb-1">回程 2/3 (二)</div>
                             <div class="flex justify-between items-center">
-                                <div class="text-2xl font-bold">18:45</div>
-                                <div class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">3h 50m</div>
-                                <div class="text-2xl font-bold">21:35</div>
+                                <div class="text-center">
+                                    <div class="text-2xl font-bold text-deep-blue">11:45</div>
+                                    <div class="text-xs text-gray-400">NRT 成田</div>
+                                </div>
+                                <div class="flex flex-col items-center px-4">
+                                    <span class="text-xs text-blue-500 font-mono mb-1">TR899</span>
+                                    <i class="fas fa-long-arrow-alt-right text-gray-300"></i>
+                                    <span class="text-[10px] text-gray-400 mt-1">3h 25m</span>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-2xl font-bold text-deep-blue">15:10</div>
+                                    <div class="text-xs text-gray-400">TPE 台北</div>
+                                </div>
                             </div>
-                            <div class="text-xs text-blue-500 mt-1 font-mono">JL0809</div>
                         </div>
-                    </div>
-
-                    <!-- Hotel Info -->
-                    <div class="glass-panel p-5 rounded-2xl">
-                        <h3 class="font-bold mb-3 flex items-center"><i class="fas fa-bed text-indigo-500 mr-2"></i>
-                            住宿資訊</h3>
-                        <div class="font-bold text-lg">湯澤格蘭飯店 (Yuzawa Grand Hotel)</div>
-                        <div class="text-sm text-gray-600 mt-1">
-                            <i class="fas fa-phone-alt w-4 text-center mr-1"></i> +81 25-784-2351
-                        </div>
-                        <div class="text-sm text-gray-600 mt-1">
-                            <i class="fas fa-map-marker-alt w-4 text-center mr-1"></i> 新潟県南魚沼郡湯沢町大字湯沢2494
-                        </div>
-                        <a href="https://goo.gl/maps/placeholder" target="_blank"
-                            class="block w-full text-center bg-blue-50 text-blue-600 font-bold py-2 rounded-lg mt-3 text-sm hover:bg-blue-100">
-                            <i class="fas fa-location-arrow mr-1"></i> 飯店導航
-                        </a>
                     </div>
                 </div>
             </transition>
@@ -291,66 +278,169 @@
                 <div v-if="currentTab === 'shopping'" key="shopping">
                     <h2 class="text-2xl font-bold text-deep-blue mb-4">購物清單</h2>
 
-                    <div class="grid grid-cols-2 gap-4">
-                        <div v-for="(item, index) in shoppingList" :key="index"
-                            class="glass-panel rounded-2xl overflow-hidden relative group">
-                            <div class="h-32 bg-gray-100 relative">
-                                <img v-if="item.image" :src="item.image" class="w-full h-full object-cover">
-                                <div v-else class="w-full h-full flex items-center justify-center text-gray-300">
-                                    <i class="fas fa-image text-2xl"></i>
+                    <!-- Folder View -->
+                    <div v-if="!currentShoppingUser" class="grid grid-cols-1 gap-4">
+                        <div v-for="user in users" :key="user" @click="currentShoppingUser = user"
+                            class="glass-panel p-6 rounded-2xl flex items-center justify-between hover:bg-white transition-colors cursor-pointer">
+                            <div class="flex items-center space-x-4">
+                                <div
+                                    class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-deep-blue font-bold text-xl">
+                                    {{ user[0] }}
                                 </div>
-                                <button @click="deleteShoppingItem(index)"
-                                    class="absolute top-1 right-1 bg-white/80 p-1.5 rounded-full text-red-400 hover:text-red-600">
-                                    <i class="fas fa-times"></i>
-                                </button>
+                                <div>
+                                    <div class="font-bold text-lg">{{ user }}的清單</div>
+                                    <div class="text-xs text-gray-400">{{ shoppingList[user].length }} 個項目</div>
+                                </div>
                             </div>
-                            <div class="p-3">
-                                <div class="font-bold text-sm truncate">{{ item.name }}</div>
-                            </div>
+                            <i class="fas fa-chevron-right text-gray-300"></i>
                         </div>
                     </div>
 
-                    <!-- Add Button -->
-                    <button @click="showAddShoppingModal = true"
-                        class="fixed bottom-6 right-6 w-14 h-14 bg-deep-blue text-white rounded-full shadow-2xl flex items-center justify-center text-2xl z-50 hover:scale-110 transition-transform">
-                        <i class="fas fa-plus"></i>
-                    </button>
+                    <!-- Detail View -->
+                    <div v-else>
+                        <button @click="currentShoppingUser = null"
+                            class="mb-4 flex items-center text-gray-400 hover:text-deep-blue">
+                            <i class="fas fa-arrow-left mr-2"></i> 返回列表
+                        </button>
+                        <h3 class="text-xl font-bold mb-4 flex items-center">
+                            <span class="bg-deep-blue text-white text-xs px-2 py-1 rounded mr-2">{{ currentShoppingUser
+                                }}</span>
+                            的購物清單
+                        </h3>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div v-for="(item, index) in shoppingList[currentShoppingUser]" :key="index"
+                                @click="openBoughtModal(item, index)"
+                                class="glass-panel rounded-2xl overflow-hidden relative group cursor-pointer hover:shadow-md transition-all border-2"
+                                :class="item.bought ? 'border-green-400 opacity-60' : 'border-transparent'">
+
+                                <div class="absolute top-2 right-2 z-10" v-if="item.bought">
+                                    <i class="fas fa-check-circle text-green-500 text-xl bg-white rounded-full"></i>
+                                </div>
+
+                                <div class="h-32 bg-gray-100 relative">
+                                    <img v-if="item.image" :src="item.image" class="w-full h-full object-cover">
+                                    <div v-else class="w-full h-full flex items-center justify-center text-gray-300">
+                                        <i class="fas fa-image text-2xl"></i>
+                                    </div>
+                                </div>
+                                <div class="p-3">
+                                    <div class="font-bold text-sm truncate">{{ item.name }}</div>
+                                    <div v-if="item.boughPrice" class="text-xs text-green-600 font-bold mt-1">¥{{
+                                        item.boughPrice }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Add Button (In Detail View) -->
+                        <button @click="showAddShoppingModal = true"
+                            class="fixed bottom-6 right-6 w-14 h-14 bg-deep-blue text-white rounded-full shadow-2xl flex items-center justify-center text-2xl z-50 hover:scale-110 transition-transform">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
                 </div>
             </transition>
 
-            <!-- Tab: Expenses (花費) -->
+            <!-- Tab: Expenses (花費紀錄) -->
             <transition name="card" mode="out-in">
                 <div v-if="currentTab === 'expenses'" key="expenses">
                     <h2 class="text-2xl font-bold text-deep-blue mb-4">花費紀錄</h2>
 
-                    <!-- Total -->
-                    <div class="bg-deep-blue text-white p-5 rounded-2xl shadow-lg mb-6">
-                        <div class="text-sm opacity-80">總支出</div>
-                        <div class="text-4xl font-bold mt-1">¥ {{ totalExpenses.toLocaleString() }}</div>
-                        <div class="mt-2 text-xs opacity-60 text-right">約 NT$ {{ (totalExpenses *
-                            exchangeRate).toLocaleString() }}</div>
+                    <!-- Sub Tabs -->
+                    <div class="flex space-x-2 mb-6 bg-white/50 p-1 rounded-xl">
+                        <button v-for="type in ['group', 'personal']" :key="type"
+                            @click="currentExpenseTab = type; currentExpenseUser = null" :class="['flex-1 py-2 rounded-lg text-sm font-bold transition-all', 
+                             currentExpenseTab === type ? 'bg-deep-blue text-white shadow' : 'text-gray-500']">
+                            {{ type === 'group' ? '團體公費' : '個人花費' }}
+                        </button>
                     </div>
 
-                    <!-- List -->
-                    <div class="space-y-3">
-                        <div v-for="(item, index) in expenses" :key="index"
-                            class="glass-panel p-4 rounded-xl flex justify-between items-center">
-                            <div>
-                                <div class="flex items-center space-x-2 mb-1">
-                                    <span
-                                        :class="['text-[10px] px-2 py-0.5 rounded text-white font-bold', getExpenseColor(item.category)]">
-                                        {{ item.category }}
-                                    </span>
-                                    <span class="text-xs text-gray-400">{{ item.date }}</span>
+                    <!-- GROUP EXPENSES -->
+                    <div v-if="currentExpenseTab === 'group'">
+                        <!-- Total Group Spending -->
+                        <div class="bg-gray-800 text-white p-5 rounded-2xl shadow-lg mb-6">
+                            <div class="text-sm opacity-80">團體總支出 (Total)</div>
+                            <div class="text-4xl font-bold mt-1">¥ {{ totalGroupExpense.toLocaleString() }}</div>
+                        </div>
+
+                        <!-- User Advanced Cards -->
+                        <div class="space-y-4">
+                            <div v-for="user in users" :key="user" class="glass-panel p-4 rounded-2xl">
+                                <div class="flex justify-between items-center mb-3">
+                                    <div class="font-bold flex items-center">
+                                        <div
+                                            class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mr-2 text-xs text-deep-blue">
+                                            {{ user[0] }}</div>
+                                        {{ user }} 預支
+                                    </div>
+                                    <div class="font-bold text-deep-blue">¥ {{ groupExpenses.filter(e => e.payer ===
+                                        user).reduce((acc, cur) => acc + Number(cur.amount), 0).toLocaleString() }}
+                                    </div>
                                 </div>
-                                <div class="font-bold text-gray-800">{{ item.name }}</div>
-                                <div class="text-xs text-gray-400 mt-0.5">{{ item.payment }} {{ item.note ?
-                                    '('+item.note+')' : '' }}</div>
+                                <!-- Items -->
+                                <div class="space-y-2 border-t pt-2 border-gray-100">
+                                    <div v-for="(item, idx) in groupExpenses.filter(e => e.payer === user)" :key="idx"
+                                        class="flex justify-between text-sm">
+                                        <span class="text-gray-600">{{ item.name }}</span>
+                                        <div class="flex items-center space-x-2">
+                                            <span>¥{{ Number(item.amount).toLocaleString() }}</span>
+                                            <button @click="deleteGroupExpense(item)"
+                                                class="text-gray-300 hover:text-red-400"><i
+                                                    class="fas fa-times"></i></button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="text-right">
-                                <div class="font-bold text-lg">¥{{ Number(item.amount).toLocaleString() }}</div>
-                                <button @click="deleteExpense(index)" class="text-xs text-red-300 p-1"><i
-                                        class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- PERSONAL EXPENSES -->
+                    <div v-if="currentExpenseTab === 'personal'">
+                        <!-- User Folders -->
+                        <div v-if="!currentExpenseUser" class="grid grid-cols-1 gap-4">
+                            <div v-for="user in users" :key="user" @click="currentExpenseUser = user"
+                                class="glass-panel p-6 rounded-2xl flex items-center justify-between hover:bg-white transition-colors cursor-pointer">
+                                <div class="flex items-center space-x-4">
+                                    <div
+                                        class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-green-700 font-bold text-xl">
+                                        {{ user[0] }}
+                                    </div>
+                                    <div>
+                                        <div class="font-bold text-lg">{{ user }}的花費</div>
+                                        <div class="text-xs text-gray-400">總計: ¥ {{
+                                            getPersonalTotal(user).toLocaleString() }}</div>
+                                    </div>
+                                </div>
+                                <i class="fas fa-chevron-right text-gray-300"></i>
+                            </div>
+                        </div>
+
+                        <!-- User Detail -->
+                        <div v-else>
+                            <button @click="currentExpenseUser = null"
+                                class="mb-4 flex items-center text-gray-400 hover:text-deep-blue">
+                                <i class="fas fa-arrow-left mr-2"></i> 返回列表
+                            </button>
+
+                            <div class="bg-green-600 text-white p-5 rounded-2xl shadow-lg mb-6">
+                                <div class="text-sm opacity-80">{{ currentExpenseUser }} 總支出</div>
+                                <div class="text-4xl font-bold mt-1">¥ {{
+                                    getPersonalTotal(currentExpenseUser).toLocaleString() }}</div>
+                            </div>
+
+                            <div class="space-y-3">
+                                <div v-for="(item, index) in personalExpenses[currentExpenseUser]" :key="index"
+                                    class="glass-panel p-4 rounded-xl flex justify-between items-center">
+                                    <div>
+                                        <div class="font-bold text-gray-800">{{ item.name }}</div>
+                                        <div class="text-xs text-gray-400 mt-0.5">{{ item.date }}</div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="font-bold text-lg">¥{{ Number(item.amount).toLocaleString() }}</div>
+                                        <button @click="deletePersonalExpense(currentExpenseUser, index)"
+                                            class="text-xs text-red-300 p-1"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -365,84 +455,79 @@
 
         </main>
 
-        <!-- ADD MODALS (Simplified) -->
+        <!-- MODALS -->
 
-        <!-- Itinerary Modal -->
-        <div v-if="showAddItineraryModal"
-            class="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm"
-            @click.self="showAddItineraryModal = false">
-            <div class="bg-white w-full max-w-md rounded-t-3xl p-6 shadow-2xl animate-slide-up">
-                <h3 class="font-bold text-xl mb-4 text-center">新增行程</h3>
-                <div class="space-y-3">
-                    <select v-model="newItem.category" class="w-full p-3 bg-gray-50 rounded-xl">
-                        <option>景點</option>
-                        <option>住宿</option>
-                        <option>美食</option>
-                        <option>購物</option>
-                        <option>航班</option>
-                        <option>其他</option>
-                    </select>
-                    <input v-model="newItem.name" placeholder="名稱" class="w-full p-3 bg-gray-50 rounded-xl">
-                    <div class="flex space-x-2">
-                        <input v-model="newItem.hours" placeholder="營業時間" class="w-1/2 p-3 bg-gray-50 rounded-xl">
-                        <input v-model="newItem.ticket" placeholder="門票" class="w-1/2 p-3 bg-gray-50 rounded-xl">
-                    </div>
-                    <textarea v-model="newItem.note" placeholder="特色 & 備註" class="w-full p-3 bg-gray-50 rounded-xl"
-                        rows="2"></textarea>
-
-                    <div class="pt-2 flex space-x-3">
-                        <button @click="addItineraryItem"
-                            class="flex-1 bg-deep-blue text-white py-3 rounded-xl font-bold">確認新增</button>
-                        <button @click="showAddItineraryModal = false"
-                            class="flex-none bg-gray-200 text-gray-600 px-6 py-3 rounded-xl">取消</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Shopping Modal -->
+        <!-- Shopping Add Modal -->
         <div v-if="showAddShoppingModal"
             class="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm"
             @click.self="showAddShoppingModal = false">
-            <div class="bg-white w-full max-w-md rounded-t-3xl p-6 shadow-2xl">
-                <h3 class="font-bold text-xl mb-4 text-center">新增購物清單</h3>
+            <div class="bg-white w-full max-w-md rounded-t-3xl p-6 shadow-2xl animate-slide-up">
+                <h3 class="font-bold text-xl mb-4 text-center">新增購物清單 ({{ currentShoppingUser }})</h3>
                 <div class="space-y-3">
                     <input v-model="newShoppingItem.name" placeholder="商品名稱" class="w-full p-3 bg-gray-50 rounded-xl">
                     <input type="file" @change="handleImageUpload" class="w-full p-3 bg-gray-50 rounded-xl text-sm">
                     <button @click="addShoppingItem"
-                        class="w-full bg-deep-blue text-white py-3 rounded-xl font-bold mt-2">加入清單</button>
+                        class="w-full bg-deep-blue text-white py-3 rounded-xl font-bold mt-2">確認新增</button>
                 </div>
             </div>
         </div>
 
-        <!-- Expense Modal -->
+        <!-- Bought Confirmation Modal -->
+        <div v-if="showBoughtModal"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+            @click.self="showBoughtModal = false">
+            <div class="bg-white w-[90%] max-w-sm rounded-3xl p-6 shadow-2xl animate-fade">
+                <h3 class="font-bold text-xl mb-2 text-center">{{ selectedShoppingItem?.name }}</h3>
+                <div class="text-center text-gray-500 mb-6 text-sm">標記為已購買並記帳?</div>
+
+                <div class="flex items-center space-x-2 mb-4 bg-gray-50 p-2 rounded-xl">
+                    <input type="checkbox" id="isBought" v-model="boughtForm.isBought" class="w-5 h-5 text-deep-blue">
+                    <label for="isBought" class="font-bold text-gray-700">我已經買到了</label>
+                </div>
+
+                <div v-if="boughtForm.isBought" class="mb-4 animate-fade">
+                    <label class="block text-xs text-gray-400 mb-1 ml-1">購入金額 (日幣)</label>
+                    <input type="number" v-model="boughtForm.price" placeholder="¥"
+                        class="w-full p-3 bg-gray-100 rounded-xl text-lg font-bold">
+                    <div class="text-xs text-green-600 mt-2"><i class="fas fa-check"></i> 將自動加入 {{ currentShoppingUser
+                        }} 的個人帳本</div>
+                </div>
+
+                <div class="flex space-x-3 pt-2">
+                    <button @click="confirmBought"
+                        class="flex-1 bg-deep-blue text-white py-3 rounded-xl font-bold">確認</button>
+                    <button @click="showBoughtModal = false"
+                        class="flex-none bg-gray-100 text-gray-500 px-4 py-3 rounded-xl">關閉</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Expense Add Modal -->
         <div v-if="showAddExpenseModal"
             class="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm"
             @click.self="showAddExpenseModal = false">
-            <div class="bg-white w-full max-w-md rounded-t-3xl p-6 shadow-2xl">
-                <h3 class="font-bold text-xl mb-4 text-center">新增花費</h3>
-                <div class="space-y-3">
-                    <div class="flex space-x-2">
-                        <select v-model="newExpense.category" class="w-1/3 p-3 bg-gray-50 rounded-xl">
-                            <option>交通</option>
-                            <option>飲食</option>
-                            <option>住宿</option>
-                            <option>門票</option>
-                            <option>購物</option>
-                            <option>其他</option>
-                        </select>
-                        <input type="date" v-model="newExpense.date" class="w-2/3 p-3 bg-gray-50 rounded-xl">
+            <div class="bg-white w-full max-w-md rounded-t-3xl p-6 shadow-2xl animate-slide-up">
+                <h3 class="font-bold text-xl mb-4 text-center">新增{{ currentExpenseTab === 'group' ? '團體' : '個人' }}花費
+                </h3>
+
+                <div class="space-y-4">
+                    <!-- User Selector -->
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1 ml-1">{{ currentExpenseTab === 'group' ? '誰預支的？'
+                            : '記在誰的帳上？' }}</label>
+                        <div class="flex space-x-2">
+                            <button v-for="user in users" :key="user" @click="newExpense.payer = user"
+                                :class="['flex-1 py-2 rounded-xl text-sm font-bold border-2', 
+                                newExpense.payer === user ? 'border-deep-blue bg-blue-50 text-deep-blue' : 'border-gray-100 text-gray-400']">
+                                {{ user }}
+                            </button>
+                        </div>
                     </div>
-                    <input v-model="newExpense.name" placeholder="名稱" class="w-full p-3 bg-gray-50 rounded-xl">
-                    <div class="flex space-x-2">
-                        <input type="number" v-model="newExpense.amount" placeholder="金額 (日幣)"
-                            class="w-2/3 p-3 bg-gray-50 rounded-xl">
-                        <select v-model="newExpense.payment" class="w-1/3 p-3 bg-gray-50 rounded-xl">
-                            <option>現金</option>
-                            <option>信用卡</option>
-                        </select>
-                    </div>
-                    <input v-model="newExpense.note" placeholder="備註" class="w-full p-3 bg-gray-50 rounded-xl">
+
+                    <input v-model="newExpense.name" placeholder="項目名稱" class="w-full p-3 bg-gray-50 rounded-xl">
+                    <input type="number" v-model="newExpense.amount" placeholder="金額 (日幣)"
+                        class="w-full p-3 bg-gray-50 rounded-xl text-lg font-bold">
+
                     <button @click="addExpense"
                         class="w-full bg-deep-blue text-white py-3 rounded-xl font-bold mt-2">記帳</button>
                 </div>
@@ -452,128 +537,129 @@
     </div>
 
     <script>
-        const { createApp, ref, computed, onMounted, watch } = Vue;
+        const { createApp, ref, computed, watch } = Vue;
 
         createApp({
             setup() {
-                // --- State ---
                 const currentTab = ref('itinerary');
-                const exchangeRate = ref(0.22); // Mock TWD/JPY
+                const exchangeRate = ref(0.215);
                 const exchangeAmount = ref('');
 
+                // Users
+                const users = ['周瑾', '玉華', '佳蓉'];
+
                 // Days Definition
-                const days = ref([
-                    { date: '6', weekday: 'Fri' },
-                    { date: '7', weekday: 'Sat' },
-                    { date: '8', weekday: 'Sun' },
-                    { date: '9', weekday: 'Mon' },
-                ]);
+                const days = [
+                    { date: '30', weekday: 'Fri' },
+                    { date: '31', weekday: 'Sat' },
+                    { date: '1', weekday: 'Sun' },
+                    { date: '2', weekday: 'Mon' },
+                    { date: '3', weekday: 'Tue' },
+                ];
                 const currentDayIndex = ref(0);
 
-                // --- Data Storage (init with mocks or localStorage) ---
-                const itineraryData = ref(JSON.parse(localStorage.getItem('itineraryData')) || {
-                    0: [
-                        { id: 1, type: 'flight', name: 'JL0802 去程', time: '08:50', flightNo: 'JL0802', note: '提早 2 小時抵達機場', category: '航班', transportType: 'car', transportTime: 40 },
-                        { id: 2, name: '湯澤格蘭飯店', category: '住宿', hours: '15:00 Check-in', note: '寄放行李', transportType: 'train', transportTime: 90 },
-                        { id: 3, name: 'GALA 湯澤滑雪場', category: '景點', ticket: '已預約', hours: '08:00-17:00', note: '租借雪具', transportType: 'bus', transportTime: 15 },
+                // ITINERARY DATA (Parsed from UserRequest)
+                const itineraryData = {
+                    0: [ // Day 1 Fri
+                        { time: '06:40', category: '航班', name: '抵達日本 (TR898)', location: '成田機場 (NRT)', note: '辦理入境、領行李' },
+                        { time: '12:00', category: '交通', name: '機場快線 Skyliner', location: '往京成上野方向', note: '車程約 41 分鐘' },
+                        { time: '12:45', category: '美食', name: '名代 宇奈とと (鰻魚飯)', location: '上野店', note: '買便當車上吃' },
+                        { time: '13:46', category: '交通', name: '上越新幹線 (指定席)', location: '往越後湯澤', note: '需預訂' },
+                        { time: '14:50', category: '住宿', name: '越後之御宿 Inamoto', location: '車站西口步行 1 分鐘', note: 'Check-in' },
+                        { time: '15:30', category: '景點', name: '清酒博物館 / 爆彈飯糰', location: 'CoCoLo 湯澤', price: '¥500' },
+                        { time: '16:30', category: '美食', name: '燒肉 SAKAEYA', location: '人氣店', price: '¥6500', note: '建議先登記' },
+                        { time: '19:00', category: '住宿', name: '露天溫泉', location: 'Inamoto', note: '休息/泡湯' },
                     ],
-                    1: [], 2: [], 3: []
+                    1: [ // Day 2 Sat
+                        { time: '09:30', category: '交通', name: '移動: 放行李', location: '往 櫻花亭', note: '計程車' },
+                        { time: '10:10', category: '景點', name: '採草莓體驗', location: '越後湯澤草莓園', price: '¥2600', note: '雪國溫室草莓' },
+                        { time: '12:00', category: '美食', name: 'Pizzeria Pittore', location: '岩原滑雪場', note: '人氣披薩' },
+                        { time: '13:30', category: '景點', name: '岩原滑雪場 (滑雪特訓)', location: 'Iwappara', price: '¥14000', note: '租裝備、請教練' },
+                        { time: '18:40', category: '美食', name: '車站美食', location: '食脊屋/食家 あさくさ', note: '蕎麥麵/生魚片' },
+                        { time: '21:00', category: '住宿', name: '櫻花亭 (Sakura Tei)', location: 'Check-in', note: '' },
+                    ],
+                    2: [ // Day 3 Sun
+                        { time: '09:00', category: '交通', name: '包車前往清津峽', location: '櫻花亭出發', price: '¥9500 (共)' },
+                        { time: '10:00', category: '景點', name: '清津峽 Tunnel of Light', location: '網美景點', price: '¥1000' },
+                        { time: '13:13', category: '交通', name: '上越新幹線 (返回上野)', location: '往東京', note: '回程' },
+                        { time: '14:35', category: '美食', name: 'HARBS 甜點 (外帶)', location: 'Parco_ya 上野店', note: '先回民宿冰' },
+                        { time: '14:40', category: '住宿', name: 'Ueno Retro Flower', location: '民宿 Check-in', note: 'Parco_ya 旁' },
+                        { time: '15:00', category: '購物', name: '阿美橫町', location: '上野', note: '肉的大山、OS Drug、二木菓子' },
+                        { time: '17:00', category: '景點', name: '東京巨蛋城', location: 'LaQua / 雲霄飛車', note: '看冬季點燈' },
+                        { time: '21:00', category: '美食', name: '備長 鰻魚飯 / 壽喜燒', location: '晴空塔', note: '晚餐' },
+                    ],
+                    3: [ // Day 4 Mon
+                        { time: '07:30', category: '美食', name: 'Komeda\'s Coffee', location: '上野廣小路店', note: '早餐' },
+                        { time: '09:30', category: '景點', name: '哈利波特影城', location: '豐島園', note: '預計停留 4hr' },
+                        { time: '14:00', category: '美食', name: '嬉嬉豚炸豬排', location: '池袋', price: '¥3500' },
+                        { time: '14:50', category: '購物', name: 'mic21 潛水裝備 & 甜點', location: '池袋', note: 'RINGO 蘋果派、蕨餅' },
+                        { time: '17:00', category: '美食', name: '金澤美味壽司', location: 'Parco_ya 6F', note: '上野' },
+                        { time: '18:00', category: '購物', name: 'Montbell', location: '御徒町店', note: '' },
+                        { time: '20:00', category: '購物', name: '多慶屋 (TAKEYA)', location: '上野', note: '買伴手禮' },
+                        { time: '22:00', category: '美食', name: '鴨to蔥 / 鳥貴族', location: '上野', price: '¥1500', note: '宵夜' },
+                    ],
+                    4: [ // Day 5 Tue
+                        { time: '07:00', category: '美食', name: 'Denny\'s 家庭餐廳', location: '湯島店', note: '早餐' },
+                        { time: '08:00', category: '交通', name: 'Skyliner (08:20)', location: '京成上野 -> 成田', note: '⚠️ 絕不能遲到' },
+                        { time: '09:05', category: '航班', name: '成田機場 (TR899)', location: '第 1 航廈', note: '11:45 起飛' },
+                        { time: '09:20', category: '購物', name: 'Fa-So-La 免稅店', location: '機場管制區', note: '最後採買' },
+                    ]
+                };
+
+                // SHOPPING DATA
+                // Structure: { '周瑾': [], '玉華': [], '佳蓉': [] }
+                const shoppingList = ref(JSON.parse(localStorage.getItem('shoppingList_v2')) || {
+                    '周瑾': [{ name: '白色戀人', image: null, bought: false }],
+                    '玉華': [],
+                    '佳蓉': []
+                });
+                const currentShoppingUser = ref(null);
+
+                // EXPENSES DATA
+                // Group: [ { name, amount, payer: '周瑾' } ]
+                // Personal: { '周瑾': [ { name, amount, date } ] }
+                const groupExpenses = ref(JSON.parse(localStorage.getItem('groupExpenses')) || []);
+                const personalExpenses = ref(JSON.parse(localStorage.getItem('personalExpenses')) || {
+                    '周瑾': [], '玉華': [], '佳蓉': []
                 });
 
-                const shoppingList = ref(JSON.parse(localStorage.getItem('shoppingList')) || [
-                    { name: '白色戀人', image: null },
-                    { name: 'Uniqlo 發熱衣', image: null }
-                ]);
+                const currentExpenseTab = ref('group');
+                const currentExpenseUser = ref(null);
 
-                const expenses = ref(JSON.parse(localStorage.getItem('expenses')) || [
-                    { category: '交通', name: '新幹線車票', date: '2026-02-06', amount: 6000, payment: '信用卡', note: '' }
-                ]);
+                // MODAL STATES
+                const showAddShoppingModal = ref(false);
+                const showBoughtModal = ref(false);
+                const showAddExpenseModal = ref(false);
 
-                // --- Computed ---
-                const currentDayItinerary = computed(() => {
-                    return itineraryData.value[currentDayIndex.value] || [];
-                });
+                // FORMS
+                const newShoppingItem = ref({ name: '', image: null });
+                const selectedShoppingItem = ref(null);
+                const selectedShoppingIndex = ref(-1);
+                const boughtForm = ref({ isBought: false, price: '' });
+                const newExpense = ref({ name: '', amount: '', payer: '周瑾' });
+
+                // Computed
+                const currentDayItinerary = computed(() => itineraryData[currentDayIndex.value] || []);
 
                 const calculatedTWD = computed(() => {
                     if (!exchangeAmount.value) return 0;
                     return Math.round(exchangeAmount.value * exchangeRate.value);
                 });
 
-                const totalExpenses = computed(() => {
-                    return expenses.value.reduce((sum, item) => sum + Number(item.amount), 0);
+                const totalGroupExpense = computed(() => {
+                    return groupExpenses.value.reduce((sum, item) => sum + Number(item.amount), 0);
                 });
 
-                // Tabs
-                const tabs = [
-                    { id: 'itinerary', icon: 'fas fa-map-marked-alt' },
-                    { id: 'info', icon: 'fas fa-info' },
-                    { id: 'shopping', icon: 'fas fa-shopping-basket' },
-                    { id: 'expenses', icon: 'fas fa-yen-sign' }
-                ];
-
-                // Modals State
-                const showAddItineraryModal = ref(false);
-                const showAddShoppingModal = ref(false);
-                const showAddExpenseModal = ref(false);
-
-                // New Item Forms
-                const newItem = ref({ category: '景點', name: '', hours: '', ticket: '', note: '' });
-                const newShoppingItem = ref({ name: '', image: null });
-                const newExpense = ref({ category: '飲食', name: '', date: new Date().toISOString().split('T')[0], amount: '', payment: '現金', note: '' });
-
-                // --- Methods ---
-
-                // Persistence
-                watch([itineraryData, shoppingList, expenses], () => {
-                    localStorage.setItem('itineraryData', JSON.stringify(itineraryData.value));
-                    localStorage.setItem('shoppingList', JSON.stringify(shoppingList.value));
-                    localStorage.setItem('expenses', JSON.stringify(expenses.value));
-                }, { deep: true });
-
-                // Itinerary Logic
-                const addItineraryItem = () => {
-                    if (!newItem.value.name) return;
-                    if (!itineraryData.value[currentDayIndex.value]) itineraryData.value[currentDayIndex.value] = [];
-
-                    itineraryData.value[currentDayIndex.value].push({
-                        id: Date.now(),
-                        ...newItem.value,
-                        transportType: 'walk', // Default
-                        transportTime: Math.floor(Math.random() * 20) + 5 // Mock calc
-                    });
-
-                    showAddItineraryModal.value = false;
-                    newItem.value = { category: '景點', name: '', hours: '', ticket: '', note: '' };
+                const getPersonalTotal = (user) => {
+                    return personalExpenses.value[user].reduce((sum, item) => sum + Number(item.amount), 0);
                 };
 
-                const deleteItem = (index) => {
-                    if (confirm("確定要刪除這個行程嗎？")) {
-                        itineraryData.value[currentDayIndex.value].splice(index, 1);
-                    }
-                };
-
-                const moveItem = (index, direction) => {
-                    const list = itineraryData.value[currentDayIndex.value];
-                    const newIndex = index + direction;
-                    if (newIndex >= 0 && newIndex < list.length) {
-                        // Swap
-                        [list[index], list[newIndex]] = [list[newIndex], list[index]];
-                        // Update Transport (Mock: Recalculate random time for swapped items)
-                        list[index].transportTime = Math.floor(Math.random() * 30) + 5;
-                        list[newIndex].transportTime = Math.floor(Math.random() * 30) + 5;
-                    }
-                };
-
-                const getTransportIcon = (type) => {
-                    const map = { walk: 'fas fa-walking', car: 'fas fa-car', bus: 'fas fa-bus', train: 'fas fa-subway' };
-                    return map[type] || 'fas fa-walking';
-                };
-
+                // Methods
                 const openGoogleMaps = (name) => {
                     window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`, '_blank');
                 };
 
-                // Shopping Logic
+                // Shopping
                 const handleImageUpload = (event) => {
                     const file = event.target.files[0];
                     if (file) {
@@ -585,37 +671,102 @@
 
                 const addShoppingItem = () => {
                     if (!newShoppingItem.value.name) return;
-                    shoppingList.value.push({ ...newShoppingItem.value });
+                    shoppingList.value[currentShoppingUser.value].push({
+                        name: newShoppingItem.value.name,
+                        image: newShoppingItem.value.image,
+                        bought: false
+                    });
                     showAddShoppingModal.value = false;
                     newShoppingItem.value = { name: '', image: null };
                 };
 
-                const deleteShoppingItem = (index) => shoppingList.value.splice(index, 1);
+                const openBoughtModal = (item, index) => {
+                    selectedShoppingItem.value = item;
+                    selectedShoppingIndex.value = index;
+                    boughtForm.value = { isBought: item.bought, price: item.boughPrice || '' };
+                    showBoughtModal.value = true;
+                };
 
-                // Expense Logic
+                const confirmBought = () => {
+                    const user = currentShoppingUser.value;
+                    const item = shoppingList.value[user][selectedShoppingIndex.value];
+
+                    // Update bought status
+                    item.bought = boughtForm.value.isBought;
+
+                    if (item.bought && boughtForm.value.price) {
+                        item.boughPrice = boughtForm.value.price;
+                        // Auto add to personal expense
+                        personalExpenses.value[user].push({
+                            name: item.name,
+                            amount: boughtForm.value.price,
+                            date: new Date().toISOString().split('T')[0]
+                        });
+                        alert(`已自動將 ¥${boughtForm.value.price} 加入 ${user} 的個人帳本！`);
+                    }
+
+                    showBoughtModal.value = false;
+                };
+
+                // Expenses
                 const addExpense = () => {
                     if (!newExpense.value.name || !newExpense.value.amount) return;
-                    expenses.value.push({ ...newExpense.value });
+
+                    if (currentExpenseTab.value === 'group') {
+                        groupExpenses.value.push({
+                            name: newExpense.value.name,
+                            amount: newExpense.value.amount,
+                            payer: newExpense.value.payer
+                        });
+                    } else {
+                        // Personal
+                        // If we are in 'All' view, use payer from select. If inside folder, use currentUser
+                        const targetUser = currentExpenseUser.value || newExpense.value.payer;
+                        personalExpenses.value[targetUser].push({
+                            name: newExpense.value.name,
+                            amount: newExpense.value.amount,
+                            date: new Date().toISOString().split('T')[0]
+                        });
+                    }
+
                     showAddExpenseModal.value = false;
-                    newExpense.value = { category: '飲食', name: '', date: new Date().toISOString().split('T')[0], amount: '', payment: '現金', note: '' };
+                    newExpense.value = { name: '', amount: '', payer: users[0] };
                 };
 
-                const deleteExpense = (index) => {
-                    if (confirm("確定刪除此筆花費？")) expenses.value.splice(index, 1);
+                const deleteGroupExpense = (item) => {
+                    const idx = groupExpenses.value.indexOf(item);
+                    if (idx > -1 && confirm("確定刪除此筆公費？")) groupExpenses.value.splice(idx, 1);
                 };
 
-                const getExpenseColor = (cat) => {
-                    const map = { '交通': 'bg-blue-500', '飲食': 'bg-orange-400', '住宿': 'bg-indigo-500', '門票': 'bg-green-500', '購物': 'bg-pink-500', '其他': 'bg-gray-400' };
-                    return map[cat] || 'bg-gray-400';
+                const deletePersonalExpense = (user, index) => {
+                    if (confirm("確定刪除此筆個人花費？")) personalExpenses.value[user].splice(index, 1);
                 };
+
+                // Watchers for persistence
+                watch([shoppingList, groupExpenses, personalExpenses], () => {
+                    localStorage.setItem('shoppingList_v2', JSON.stringify(shoppingList.value));
+                    localStorage.setItem('groupExpenses', JSON.stringify(groupExpenses.value));
+                    localStorage.setItem('personalExpenses', JSON.stringify(personalExpenses.value));
+                }, { deep: true });
 
                 return {
-                    currentTab, tabs, days, currentDayIndex, currentDayItinerary,
+                    currentTab, tabs: [
+                        { id: 'itinerary', icon: 'fas fa-map-marked-alt' },
+                        { id: 'info', icon: 'fas fa-info' },
+                        { id: 'shopping', icon: 'fas fa-shopping-basket' },
+                        { id: 'expenses', icon: 'fas fa-yen-sign' }
+                    ],
+                    days, currentDayIndex, currentDayItinerary,
                     exchangeRate, exchangeAmount, calculatedTWD,
-                    shoppingList, expenses, totalExpenses,
-                    showAddItineraryModal, newItem, addItineraryItem, deleteItem, moveItem, getTransportIcon, openGoogleMaps,
-                    showAddShoppingModal, newShoppingItem, handleImageUpload, addShoppingItem, deleteShoppingItem,
-                    showAddExpenseModal, newExpense, addExpense, deleteExpense, getExpenseColor
+                    users, groupExpenses, personalExpenses,
+                    // Shopping
+                    shoppingList, currentShoppingUser, showAddShoppingModal, newShoppingItem,
+                    handleImageUpload, addShoppingItem,
+                    showBoughtModal, selectedShoppingItem, boughtForm, openBoughtModal, confirmBought,
+                    // Expenses
+                    currentExpenseTab, currentExpenseUser, totalGroupExpense, getPersonalTotal,
+                    showAddExpenseModal, newExpense, addExpense, deleteGroupExpense, deletePersonalExpense,
+                    openGoogleMaps
                 };
             }
         }).mount('#app');
