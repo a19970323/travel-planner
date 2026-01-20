@@ -868,24 +868,14 @@
                         groupExpenses_v4: groupExpenses.value,
                         personalExpenses_v4: personalExpenses.value
                     };
-                    const jsonPayload = JSON.stringify(payload);
-                    console.log('Sync Payload Size:', jsonPayload.length, 'bytes');
-
                     try {
                         // GAS requires text/plain for CORS simplicity often, but we handle standard requests
-                        const res = await fetch(GAS_URL, {
+                        await fetch(GAS_URL, {
                             method: 'POST',
                             mode: 'no-cors', // Important for GAS opaque response
                             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                            body: jsonPayload
+                            body: JSON.stringify(payload)
                         });
-
-                        console.log('Cloud Response Status:', res.status, res.statusText);
-                        const text = await res.text();
-                        console.log('Cloud Response Body:', text);
-
-                        if (!res.ok) throw new Error(`HTTP ${res.status}: ${text}`);
-
                         // Because mode: no-cors returns opaque, we assume success if no error thrown
                         syncStatus.value = 'success';
                     } catch (e) {
@@ -915,7 +905,6 @@
 
                     // Cloud Sync
                     syncStatus.value = 'syncing'; // Immediate feedback
-                    console.log('Main Watcher Triggered! Scheduling sync...');
                     debouncedSync();
                 }, { deep: true });
 
