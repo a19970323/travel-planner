@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,8 +12,9 @@
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
+
     <script>
         tailwind.config = {
             theme: {
@@ -35,51 +37,55 @@
     <style>
         body {
             font-family: 'Noto Sans TC', sans-serif;
-            background-color: #E3F2FD; /* Extended from banner bg */
+            background-color: #E3F2FD;
+            /* Extended from banner bg */
             -webkit-tap-highlight-color: transparent;
         }
+
         .hide-scrollbar::-webkit-scrollbar {
             display: none;
         }
+
         .hide-scrollbar {
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
+
         .glass-panel {
             background: rgba(255, 255, 255, 0.9);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.5);
         }
+
         /* Mobile-like card transitions */
-        .card-enter-active, .card-leave-active {
+        .card-enter-active,
+        .card-leave-active {
             transition: all 0.3s ease;
         }
-        .card-enter-from, .card-leave-to {
+
+        .card-enter-from,
+        .card-leave-to {
             opacity: 0;
             transform: translateY(20px);
         }
     </style>
 </head>
+
 <body class="text-text-dark">
     <div id="app" class="max-w-md mx-auto min-h-screen bg-snow-blue shadow-2xl relative overflow-hidden">
-        
+
         <!-- Header Section -->
         <header class="relative z-10">
             <!-- Banner Image Container (Height 250px) -->
             <div class="h-[250px] w-full overflow-hidden relative">
-                <img src="./圖片/banner.png" alt="Travel Banner" class="w-full h-full object-cover object-left-top">
-                
+                <img src="./images/banner.png" alt="Travel Banner" class="w-full h-full object-cover object-left-top">
+
                 <!-- Floating Tabs (Bottom Right of Banner) -->
                 <div class="absolute bottom-12 right-4 flex space-x-3">
-                    <button 
-                        v-for="tab in tabs" 
-                        :key="tab.id"
-                        @click="currentTab = tab.id"
-                        :class="[
+                    <button v-for="tab in tabs" :key="tab.id" @click="currentTab = tab.id" :class="[
                             'w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95 border-2',
                             currentTab === tab.id ? 'bg-deep-blue text-white border-white scale-110' : 'bg-white text-text-light border-transparent'
-                        ]"
-                    >
+                        ]">
                         <i :class="tab.icon + ' text-lg'"></i>
                     </button>
                 </div>
@@ -91,28 +97,24 @@
 
         <!-- Main Content Area -->
         <main class="relative z-20 px-4 pb-24 -mt-4 min-h-[60vh]">
-            
+
             <!-- Tab: Itinerary (每日行程) -->
             <transition name="card" mode="out-in">
                 <div v-if="currentTab === 'itinerary'" key="itinerary">
                     <!-- Date Selector -->
                     <div class="flex overflow-x-auto hide-scrollbar space-x-4 pb-4 mb-2">
-                        <button 
-                            v-for="(day, index) in days" 
-                            :key="index"
-                            @click="currentDayIndex = index"
-                            :class="[
+                        <button v-for="(day, index) in days" :key="index" @click="currentDayIndex = index" :class="[
                                 'flex flex-col items-center min-w-[60px] p-2 rounded-2xl transition-colors',
                                 currentDayIndex === index ? 'bg-deep-blue text-white shadow-md' : 'bg-white text-text-light'
-                            ]"
-                        >
+                            ]">
                             <span class="text-xs opacity-80">{{ day.weekday }}</span>
                             <span class="text-xl font-bold">{{ day.date }}</span>
                         </button>
                     </div>
 
                     <!-- Weather Widget for the 1st item of the day -->
-                    <div class="bg-gradient-to-r from-blue-400 to-blue-300 text-white p-4 rounded-2xl shadow-lg mb-6 flex items-center justify-between">
+                    <div
+                        class="bg-gradient-to-r from-blue-400 to-blue-300 text-white p-4 rounded-2xl shadow-lg mb-6 flex items-center justify-between">
                         <div>
                             <div class="text-3xl font-bold flex items-center">
                                 <i class="fas fa-snowflake mr-3"></i>
@@ -126,9 +128,10 @@
                     <!-- Itinerary List -->
                     <div class="space-y-4">
                         <div v-for="(item, index) in currentDayItinerary" :key="item.id" class="relative group">
-                            
+
                             <!-- Travel Time (if not first item) -->
-                            <div v-if="index > 0" class="flex justify-center items-center py-2 text-text-light text-xs font-medium">
+                            <div v-if="index > 0"
+                                class="flex justify-center items-center py-2 text-text-light text-xs font-medium">
                                 <div class="h-8 w-0.5 bg-gray-300 absolute -top-4 left-1/2 -ml-px z-0"></div>
                                 <div class="bg-snow-blue px-2 z-10 flex items-center space-x-1">
                                     <i :class="getTransportIcon(item.transportType)"></i>
@@ -136,7 +139,8 @@
                                 </div>
                             </div>
                             <!-- First item travel time (from hotel) -->
-                            <div v-else class="flex justify-center items-center py-2 text-text-light text-xs font-medium">
+                            <div v-else
+                                class="flex justify-center items-center py-2 text-text-light text-xs font-medium">
                                 <div class="bg-snow-blue px-2 z-10 flex items-center space-x-1">
                                     <i class="fas fa-hotel"></i>
                                     <i class="fas fa-arrow-right text-[10px]"></i>
@@ -146,7 +150,8 @@
                             </div>
 
                             <!-- Card -->
-                            <div class="glass-panel p-4 rounded-2xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+                            <div
+                                class="glass-panel p-4 rounded-2xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
                                 <!-- Drag Handle (Visual only for now) -->
                                 <div class="absolute right-0 top-0 p-2 opacity-20 cursor-move">
                                     <i class="fas fa-grip-vertical"></i>
@@ -158,7 +163,8 @@
                                     <div class="text-sm mt-1 space-y-1">
                                         <div class="flex justify-between">
                                             <span>{{ item.time }}</span>
-                                            <span class="font-mono bg-blue-100 text-blue-800 px-2 rounded">{{ item.flightNo }}</span>
+                                            <span class="font-mono bg-blue-100 text-blue-800 px-2 rounded">{{
+                                                item.flightNo }}</span>
                                         </div>
                                         <div class="text-gray-500">{{ item.note }}</div>
                                     </div>
@@ -167,23 +173,36 @@
                                 <!-- Standard Card -->
                                 <div v-else class="pl-1">
                                     <div class="flex justify-between items-start">
-                                        <span class="bg-blue-100 text-deep-blue text-[10px] px-2 py-0.5 rounded-full font-bold mb-1 inline-block">
+                                        <span
+                                            class="bg-blue-100 text-deep-blue text-[10px] px-2 py-0.5 rounded-full font-bold mb-1 inline-block">
                                             {{ item.category }}
                                         </span>
                                         <div class="flex space-x-2">
-                                            <button @click="moveItem(index, -1)" class="text-gray-300 hover:text-deep-blue px-1"><i class="fas fa-chevron-up"></i></button>
-                                            <button @click="moveItem(index, 1)" class="text-gray-300 hover:text-deep-blue px-1"><i class="fas fa-chevron-down"></i></button>
-                                            <button @click="openGoogleMaps(item.name)" class="text-blue-400 hover:text-deep-blue"><i class="fas fa-location-arrow"></i></button>
-                                            <button @click="deleteItem(index)" class="text-red-300 hover:text-red-500"><i class="fas fa-trash"></i></button>
+                                            <button @click="moveItem(index, -1)"
+                                                class="text-gray-300 hover:text-deep-blue px-1"><i
+                                                    class="fas fa-chevron-up"></i></button>
+                                            <button @click="moveItem(index, 1)"
+                                                class="text-gray-300 hover:text-deep-blue px-1"><i
+                                                    class="fas fa-chevron-down"></i></button>
+                                            <button @click="openGoogleMaps(item.name)"
+                                                class="text-blue-400 hover:text-deep-blue"><i
+                                                    class="fas fa-location-arrow"></i></button>
+                                            <button @click="deleteItem(index)"
+                                                class="text-red-300 hover:text-red-500"><i
+                                                    class="fas fa-trash"></i></button>
                                         </div>
                                     </div>
-                                    
+
                                     <h3 class="font-bold text-lg text-text-dark">{{ item.name }}</h3>
-                                    
+
                                     <div class="text-sm text-gray-600 mt-2 space-y-1">
-                                        <div v-if="item.hours"><i class="far fa-clock w-4 text-center mr-1"></i> {{ item.hours }}</div>
-                                        <div v-if="item.ticket && item.category === '景點'"><i class="fas fa-ticket-alt w-4 text-center mr-1"></i> {{ item.ticket }}</div>
-                                        <div v-if="item.note" class="mt-2 text-xs bg-white/50 p-2 rounded">{{ item.note }}</div>
+                                        <div v-if="item.hours"><i class="far fa-clock w-4 text-center mr-1"></i> {{
+                                            item.hours }}</div>
+                                        <div v-if="item.ticket && item.category === '景點'"><i
+                                                class="fas fa-ticket-alt w-4 text-center mr-1"></i> {{ item.ticket }}
+                                        </div>
+                                        <div v-if="item.note" class="mt-2 text-xs bg-white/50 p-2 rounded">{{ item.note
+                                            }}</div>
                                     </div>
                                 </div>
                             </div>
@@ -191,7 +210,8 @@
                     </div>
 
                     <!-- Add Button -->
-                    <button @click="showAddItineraryModal = true" class="fixed bottom-6 right-6 w-14 h-14 bg-deep-blue text-white rounded-full shadow-2xl flex items-center justify-center text-2xl z-50 hover:scale-110 transition-transform">
+                    <button @click="showAddItineraryModal = true"
+                        class="fixed bottom-6 right-6 w-14 h-14 bg-deep-blue text-white rounded-full shadow-2xl flex items-center justify-center text-2xl z-50 hover:scale-110 transition-transform">
                         <i class="fas fa-plus"></i>
                     </button>
                 </div>
@@ -201,12 +221,14 @@
             <transition name="card" mode="out-in">
                 <div v-if="currentTab === 'info'" key="info" class="space-y-6">
                     <h2 class="text-2xl font-bold text-deep-blue mb-4">旅遊資訊</h2>
-                    
+
                     <!-- Exchange Rate -->
                     <div class="glass-panel p-5 rounded-2xl">
-                        <h3 class="font-bold mb-3 flex items-center"><i class="fas fa-coins text-yellow-500 mr-2"></i> 匯率換算</h3>
+                        <h3 class="font-bold mb-3 flex items-center"><i class="fas fa-coins text-yellow-500 mr-2"></i>
+                            匯率換算</h3>
                         <div class="flex items-center space-x-2">
-                            <input type="number" v-model="exchangeAmount" placeholder="外幣" class="w-full p-2 rounded-lg bg-white/50 border-none focus:ring-2 focus:ring-blue-300 outline-none">
+                            <input type="number" v-model="exchangeAmount" placeholder="外幣"
+                                class="w-full p-2 rounded-lg bg-white/50 border-none focus:ring-2 focus:ring-blue-300 outline-none">
                             <i class="fas fa-arrow-right text-gray-400"></i>
                             <div class="w-full p-2 font-bold text-right text-deep-blue">
                                 NT$ {{ calculatedTWD }}
@@ -217,11 +239,13 @@
 
                     <!-- Flights Info -->
                     <div class="glass-panel p-5 rounded-2xl">
-                        <h3 class="font-bold mb-3 flex items-center"><i class="fas fa-plane text-blue-500 mr-2"></i> 航班資訊</h3>
-                        
+                        <h3 class="font-bold mb-3 flex items-center"><i class="fas fa-plane text-blue-500 mr-2"></i>
+                            航班資訊</h3>
+
                         <!-- Outbound -->
                         <div class="mb-4 pb-4 border-b border-gray-100">
-                            <div class="flex justify-between text-sm font-bold text-gray-500 mb-1">去程 TPE <i class="fas fa-arrow-right mx-1"></i> NRT</div>
+                            <div class="flex justify-between text-sm font-bold text-gray-500 mb-1">去程 TPE <i
+                                    class="fas fa-arrow-right mx-1"></i> NRT</div>
                             <div class="flex justify-between items-center">
                                 <div class="text-2xl font-bold">08:50</div>
                                 <div class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">3h 20m</div>
@@ -232,7 +256,8 @@
 
                         <!-- Inbound -->
                         <div>
-                            <div class="flex justify-between text-sm font-bold text-gray-500 mb-1">回程 NRT <i class="fas fa-arrow-right mx-1"></i> TPE</div>
+                            <div class="flex justify-between text-sm font-bold text-gray-500 mb-1">回程 NRT <i
+                                    class="fas fa-arrow-right mx-1"></i> TPE</div>
                             <div class="flex justify-between items-center">
                                 <div class="text-2xl font-bold">18:45</div>
                                 <div class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">3h 50m</div>
@@ -244,7 +269,8 @@
 
                     <!-- Hotel Info -->
                     <div class="glass-panel p-5 rounded-2xl">
-                        <h3 class="font-bold mb-3 flex items-center"><i class="fas fa-bed text-indigo-500 mr-2"></i> 住宿資訊</h3>
+                        <h3 class="font-bold mb-3 flex items-center"><i class="fas fa-bed text-indigo-500 mr-2"></i>
+                            住宿資訊</h3>
                         <div class="font-bold text-lg">湯澤格蘭飯店 (Yuzawa Grand Hotel)</div>
                         <div class="text-sm text-gray-600 mt-1">
                             <i class="fas fa-phone-alt w-4 text-center mr-1"></i> +81 25-784-2351
@@ -252,7 +278,8 @@
                         <div class="text-sm text-gray-600 mt-1">
                             <i class="fas fa-map-marker-alt w-4 text-center mr-1"></i> 新潟県南魚沼郡湯沢町大字湯沢2494
                         </div>
-                        <a href="https://goo.gl/maps/placeholder" target="_blank" class="block w-full text-center bg-blue-50 text-blue-600 font-bold py-2 rounded-lg mt-3 text-sm hover:bg-blue-100">
+                        <a href="https://goo.gl/maps/placeholder" target="_blank"
+                            class="block w-full text-center bg-blue-50 text-blue-600 font-bold py-2 rounded-lg mt-3 text-sm hover:bg-blue-100">
                             <i class="fas fa-location-arrow mr-1"></i> 飯店導航
                         </a>
                     </div>
@@ -263,15 +290,17 @@
             <transition name="card" mode="out-in">
                 <div v-if="currentTab === 'shopping'" key="shopping">
                     <h2 class="text-2xl font-bold text-deep-blue mb-4">購物清單</h2>
-                    
+
                     <div class="grid grid-cols-2 gap-4">
-                        <div v-for="(item, index) in shoppingList" :key="index" class="glass-panel rounded-2xl overflow-hidden relative group">
+                        <div v-for="(item, index) in shoppingList" :key="index"
+                            class="glass-panel rounded-2xl overflow-hidden relative group">
                             <div class="h-32 bg-gray-100 relative">
                                 <img v-if="item.image" :src="item.image" class="w-full h-full object-cover">
                                 <div v-else class="w-full h-full flex items-center justify-center text-gray-300">
                                     <i class="fas fa-image text-2xl"></i>
                                 </div>
-                                <button @click="deleteShoppingItem(index)" class="absolute top-1 right-1 bg-white/80 p-1.5 rounded-full text-red-400 hover:text-red-600">
+                                <button @click="deleteShoppingItem(index)"
+                                    class="absolute top-1 right-1 bg-white/80 p-1.5 rounded-full text-red-400 hover:text-red-600">
                                     <i class="fas fa-times"></i>
                                 </button>
                             </div>
@@ -282,7 +311,8 @@
                     </div>
 
                     <!-- Add Button -->
-                    <button @click="showAddShoppingModal = true" class="fixed bottom-6 right-6 w-14 h-14 bg-deep-blue text-white rounded-full shadow-2xl flex items-center justify-center text-2xl z-50 hover:scale-110 transition-transform">
+                    <button @click="showAddShoppingModal = true"
+                        class="fixed bottom-6 right-6 w-14 h-14 bg-deep-blue text-white rounded-full shadow-2xl flex items-center justify-center text-2xl z-50 hover:scale-110 transition-transform">
                         <i class="fas fa-plus"></i>
                     </button>
                 </div>
@@ -292,100 +322,129 @@
             <transition name="card" mode="out-in">
                 <div v-if="currentTab === 'expenses'" key="expenses">
                     <h2 class="text-2xl font-bold text-deep-blue mb-4">花費紀錄</h2>
-                    
+
                     <!-- Total -->
                     <div class="bg-deep-blue text-white p-5 rounded-2xl shadow-lg mb-6">
                         <div class="text-sm opacity-80">總支出</div>
                         <div class="text-4xl font-bold mt-1">¥ {{ totalExpenses.toLocaleString() }}</div>
-                        <div class="mt-2 text-xs opacity-60 text-right">約 NT$ {{ (totalExpenses * exchangeRate).toLocaleString() }}</div>
+                        <div class="mt-2 text-xs opacity-60 text-right">約 NT$ {{ (totalExpenses *
+                            exchangeRate).toLocaleString() }}</div>
                     </div>
 
                     <!-- List -->
                     <div class="space-y-3">
-                        <div v-for="(item, index) in expenses" :key="index" class="glass-panel p-4 rounded-xl flex justify-between items-center">
+                        <div v-for="(item, index) in expenses" :key="index"
+                            class="glass-panel p-4 rounded-xl flex justify-between items-center">
                             <div>
                                 <div class="flex items-center space-x-2 mb-1">
-                                    <span :class="['text-[10px] px-2 py-0.5 rounded text-white font-bold', getExpenseColor(item.category)]">
+                                    <span
+                                        :class="['text-[10px] px-2 py-0.5 rounded text-white font-bold', getExpenseColor(item.category)]">
                                         {{ item.category }}
                                     </span>
                                     <span class="text-xs text-gray-400">{{ item.date }}</span>
                                 </div>
                                 <div class="font-bold text-gray-800">{{ item.name }}</div>
-                                <div class="text-xs text-gray-400 mt-0.5">{{ item.payment }} {{ item.note ? '('+item.note+')' : '' }}</div>
+                                <div class="text-xs text-gray-400 mt-0.5">{{ item.payment }} {{ item.note ?
+                                    '('+item.note+')' : '' }}</div>
                             </div>
                             <div class="text-right">
                                 <div class="font-bold text-lg">¥{{ Number(item.amount).toLocaleString() }}</div>
-                                <button @click="deleteExpense(index)" class="text-xs text-red-300 p-1"><i class="fas fa-trash"></i></button>
+                                <button @click="deleteExpense(index)" class="text-xs text-red-300 p-1"><i
+                                        class="fas fa-trash"></i></button>
                             </div>
                         </div>
                     </div>
 
                     <!-- Add Button -->
-                    <button @click="showAddExpenseModal = true" class="fixed bottom-6 right-6 w-14 h-14 bg-deep-blue text-white rounded-full shadow-2xl flex items-center justify-center text-2xl z-50 hover:scale-110 transition-transform">
+                    <button @click="showAddExpenseModal = true"
+                        class="fixed bottom-6 right-6 w-14 h-14 bg-deep-blue text-white rounded-full shadow-2xl flex items-center justify-center text-2xl z-50 hover:scale-110 transition-transform">
                         <i class="fas fa-plus"></i>
                     </button>
                 </div>
             </transition>
-            
+
         </main>
 
         <!-- ADD MODALS (Simplified) -->
 
         <!-- Itinerary Modal -->
-        <div v-if="showAddItineraryModal" class="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm" @click.self="showAddItineraryModal = false">
+        <div v-if="showAddItineraryModal"
+            class="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm"
+            @click.self="showAddItineraryModal = false">
             <div class="bg-white w-full max-w-md rounded-t-3xl p-6 shadow-2xl animate-slide-up">
                 <h3 class="font-bold text-xl mb-4 text-center">新增行程</h3>
                 <div class="space-y-3">
                     <select v-model="newItem.category" class="w-full p-3 bg-gray-50 rounded-xl">
-                        <option>景點</option><option>住宿</option><option>美食</option><option>購物</option><option>航班</option><option>其他</option>
+                        <option>景點</option>
+                        <option>住宿</option>
+                        <option>美食</option>
+                        <option>購物</option>
+                        <option>航班</option>
+                        <option>其他</option>
                     </select>
                     <input v-model="newItem.name" placeholder="名稱" class="w-full p-3 bg-gray-50 rounded-xl">
                     <div class="flex space-x-2">
                         <input v-model="newItem.hours" placeholder="營業時間" class="w-1/2 p-3 bg-gray-50 rounded-xl">
                         <input v-model="newItem.ticket" placeholder="門票" class="w-1/2 p-3 bg-gray-50 rounded-xl">
                     </div>
-                    <textarea v-model="newItem.note" placeholder="特色 & 備註" class="w-full p-3 bg-gray-50 rounded-xl" rows="2"></textarea>
-                    
+                    <textarea v-model="newItem.note" placeholder="特色 & 備註" class="w-full p-3 bg-gray-50 rounded-xl"
+                        rows="2"></textarea>
+
                     <div class="pt-2 flex space-x-3">
-                        <button @click="addItineraryItem" class="flex-1 bg-deep-blue text-white py-3 rounded-xl font-bold">確認新增</button>
-                        <button @click="showAddItineraryModal = false" class="flex-none bg-gray-200 text-gray-600 px-6 py-3 rounded-xl">取消</button>
+                        <button @click="addItineraryItem"
+                            class="flex-1 bg-deep-blue text-white py-3 rounded-xl font-bold">確認新增</button>
+                        <button @click="showAddItineraryModal = false"
+                            class="flex-none bg-gray-200 text-gray-600 px-6 py-3 rounded-xl">取消</button>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Shopping Modal -->
-        <div v-if="showAddShoppingModal" class="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm" @click.self="showAddShoppingModal = false">
+        <div v-if="showAddShoppingModal"
+            class="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm"
+            @click.self="showAddShoppingModal = false">
             <div class="bg-white w-full max-w-md rounded-t-3xl p-6 shadow-2xl">
                 <h3 class="font-bold text-xl mb-4 text-center">新增購物清單</h3>
                 <div class="space-y-3">
                     <input v-model="newShoppingItem.name" placeholder="商品名稱" class="w-full p-3 bg-gray-50 rounded-xl">
                     <input type="file" @change="handleImageUpload" class="w-full p-3 bg-gray-50 rounded-xl text-sm">
-                    <button @click="addShoppingItem" class="w-full bg-deep-blue text-white py-3 rounded-xl font-bold mt-2">加入清單</button>
+                    <button @click="addShoppingItem"
+                        class="w-full bg-deep-blue text-white py-3 rounded-xl font-bold mt-2">加入清單</button>
                 </div>
             </div>
         </div>
 
         <!-- Expense Modal -->
-        <div v-if="showAddExpenseModal" class="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm" @click.self="showAddExpenseModal = false">
+        <div v-if="showAddExpenseModal"
+            class="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm"
+            @click.self="showAddExpenseModal = false">
             <div class="bg-white w-full max-w-md rounded-t-3xl p-6 shadow-2xl">
                 <h3 class="font-bold text-xl mb-4 text-center">新增花費</h3>
                 <div class="space-y-3">
                     <div class="flex space-x-2">
                         <select v-model="newExpense.category" class="w-1/3 p-3 bg-gray-50 rounded-xl">
-                            <option>交通</option><option>飲食</option><option>住宿</option><option>門票</option><option>購物</option><option>其他</option>
+                            <option>交通</option>
+                            <option>飲食</option>
+                            <option>住宿</option>
+                            <option>門票</option>
+                            <option>購物</option>
+                            <option>其他</option>
                         </select>
                         <input type="date" v-model="newExpense.date" class="w-2/3 p-3 bg-gray-50 rounded-xl">
                     </div>
                     <input v-model="newExpense.name" placeholder="名稱" class="w-full p-3 bg-gray-50 rounded-xl">
                     <div class="flex space-x-2">
-                        <input type="number" v-model="newExpense.amount" placeholder="金額 (日幣)" class="w-2/3 p-3 bg-gray-50 rounded-xl">
+                        <input type="number" v-model="newExpense.amount" placeholder="金額 (日幣)"
+                            class="w-2/3 p-3 bg-gray-50 rounded-xl">
                         <select v-model="newExpense.payment" class="w-1/3 p-3 bg-gray-50 rounded-xl">
-                            <option>現金</option><option>信用卡</option>
+                            <option>現金</option>
+                            <option>信用卡</option>
                         </select>
                     </div>
                     <input v-model="newExpense.note" placeholder="備註" class="w-full p-3 bg-gray-50 rounded-xl">
-                    <button @click="addExpense" class="w-full bg-deep-blue text-white py-3 rounded-xl font-bold mt-2">記帳</button>
+                    <button @click="addExpense"
+                        class="w-full bg-deep-blue text-white py-3 rounded-xl font-bold mt-2">記帳</button>
                 </div>
             </div>
         </div>
@@ -401,7 +460,7 @@
                 const currentTab = ref('itinerary');
                 const exchangeRate = ref(0.22); // Mock TWD/JPY
                 const exchangeAmount = ref('');
-                
+
                 // Days Definition
                 const days = ref([
                     { date: '6', weekday: 'Fri' },
@@ -473,22 +532,22 @@
 
                 // Itinerary Logic
                 const addItineraryItem = () => {
-                    if(!newItem.value.name) return;
-                    if(!itineraryData.value[currentDayIndex.value]) itineraryData.value[currentDayIndex.value] = [];
-                    
+                    if (!newItem.value.name) return;
+                    if (!itineraryData.value[currentDayIndex.value]) itineraryData.value[currentDayIndex.value] = [];
+
                     itineraryData.value[currentDayIndex.value].push({
                         id: Date.now(),
                         ...newItem.value,
                         transportType: 'walk', // Default
                         transportTime: Math.floor(Math.random() * 20) + 5 // Mock calc
                     });
-                    
+
                     showAddItineraryModal.value = false;
                     newItem.value = { category: '景點', name: '', hours: '', ticket: '', note: '' };
                 };
 
                 const deleteItem = (index) => {
-                    if(confirm("確定要刪除這個行程嗎？")) {
+                    if (confirm("確定要刪除這個行程嗎？")) {
                         itineraryData.value[currentDayIndex.value].splice(index, 1);
                     }
                 };
@@ -525,7 +584,7 @@
                 };
 
                 const addShoppingItem = () => {
-                    if(!newShoppingItem.value.name) return;
+                    if (!newShoppingItem.value.name) return;
                     shoppingList.value.push({ ...newShoppingItem.value });
                     showAddShoppingModal.value = false;
                     newShoppingItem.value = { name: '', image: null };
@@ -535,14 +594,14 @@
 
                 // Expense Logic
                 const addExpense = () => {
-                    if(!newExpense.value.name || !newExpense.value.amount) return;
+                    if (!newExpense.value.name || !newExpense.value.amount) return;
                     expenses.value.push({ ...newExpense.value });
                     showAddExpenseModal.value = false;
                     newExpense.value = { category: '飲食', name: '', date: new Date().toISOString().split('T')[0], amount: '', payment: '現金', note: '' };
                 };
 
                 const deleteExpense = (index) => {
-                    if(confirm("確定刪除此筆花費？")) expenses.value.splice(index, 1);
+                    if (confirm("確定刪除此筆花費？")) expenses.value.splice(index, 1);
                 };
 
                 const getExpenseColor = (cat) => {
@@ -562,4 +621,5 @@
         }).mount('#app');
     </script>
 </body>
+
 </html>
