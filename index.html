@@ -109,6 +109,16 @@
         .fade-leave-to {
             opacity: 0;
         }
+
+        .spin {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
     </style>
 </head>
 
@@ -129,6 +139,15 @@
                         ]">
                         <i :class="tab.icon + ' text-lg'"></i>
                     </button>
+                    <!-- Sync Indicator -->
+                    <div class="w-12 h-12 rounded-full flex items-center justify-center shadow-lg border-2 bg-white/90 backdrop-blur"
+                        :class="syncStatus === 'error' ? 'border-red-400 text-red-500' : 'border-transparent text-deep-blue'">
+                        <i v-if="syncStatus === 'syncing'" class="fas fa-sync-alt spin"></i>
+                        <i v-else-if="syncStatus === 'success'" class="fas fa-cloud-check text-green-500"></i>
+                        <i v-else-if="syncStatus === 'error'" class="fas fa-exclamation-triangle"
+                            @click="syncToCloud"></i>
+                        <i v-else class="fas fa-cloud text-gray-400"></i>
+                    </div>
                 </div>
             </div>
             <div class="absolute bottom-0 left-0 w-full h-12 bg-snow-blue rounded-t-[40px] translate-y-1"></div>
@@ -597,6 +616,17 @@
     <script>
         const { createApp, ref, computed, watch, onMounted } = Vue;
 
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbx38lPxzS_rPDti2ZplwPvlraLrBW5DgGJpcuyid8HGuVG3RSnyNAKgY0m-BExrA5vo4w/exec';
+
+        // Debounce Helper
+        function debounce(func, wait) {
+            let timeout;
+            return function (...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func(...args), wait);
+            }
+        }
+
         createApp({
             setup() {
                 // Safe LocalStorage Parser
@@ -614,6 +644,7 @@
                 const exchangeRate = ref(0.215);
                 const exchangeAmount = ref('');
                 const loadingRate = ref(false);
+                const syncStatus = ref('idle'); // idle, syncing, success, error
                 const users = ['周瑾', '玉華', '佳蓉'];
                 const days = [
                     { date: '30', weekday: 'Fri' }, { date: '31', weekday: 'Sat' },
@@ -764,13 +795,65 @@
                 const deletePersonalExpense = (user, index) => { if (confirm("刪除？")) personalExpenses.value[user].splice(index, 1); };
                 const openGoogleMaps = (name) => { window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`, '_blank'); };
 
-                onMounted(() => fetchExchangeRate());
+                // AUTO SYNC LOGIC
+                const fetchFromCloud = async () => {
+                    syncStatus.value = 'syncing';
+                    try {
+                        const res = await fetch(GAS_URL + '?action=read', { method: 'GET', redirect: 'follow' });
+                        const data = await res.json();
+                        if (data.itineraryData_v4) itineraryData.value = data.itineraryData_v4;
+                        if (data.shoppingList_v4) shoppingList.value = data.shoppingList_v4;
+                        if (data.groupExpenses_v4) groupExpenses.value = data.groupExpenses_v4;
+                        if (data.personalExpenses_v4) personalExpenses.value = data.personalExpenses_v4;
+                        syncStatus.value = 'success';
+                        console.log('Loaded from cloud');
+                    } catch (e) {
+                        console.error('Cloud load fail', e);
+                        syncStatus.value = 'error';
+                    }
+                };
+
+                const syncToCloud = async () => {
+                    syncStatus.value = 'syncing';
+                    const payload = {
+                        itineraryData_v4: itineraryData.value,
+                        shoppingList_v4: shoppingList.value,
+                        groupExpenses_v4: groupExpenses.value,
+                        personalExpenses_v4: personalExpenses.value
+                    };
+                    try {
+                        // GAS requires text/plain for CORS simplicity often, but we handle standard requests
+                        await fetch(GAS_URL, {
+                            method: 'POST',
+                            mode: 'no-cors', // Important for GAS opaque response
+                            headers: { 'Content-Type': 'text/plain' },
+                            body: JSON.stringify(payload)
+                        });
+                        // Because mode: no-cors returns opaque, we assume success if no error thrown
+                        syncStatus.value = 'success';
+                    } catch (e) {
+                        console.error('Cloud save fail', e);
+                        syncStatus.value = 'error';
+                    }
+                };
+
+                const debouncedSync = debounce(syncToCloud, 2000); // Wait 2s after changes
+
+                onMounted(() => {
+                    fetchExchangeRate();
+                    fetchFromCloud(); // Initial Load
+                });
 
                 watch([itineraryData, shoppingList, groupExpenses, personalExpenses], () => {
+                    // Local Persist
                     localStorage.setItem('itineraryData_v4', JSON.stringify(itineraryData.value));
-                    localStorage.setItem('shoppingList_v4', JSON.stringify(shoppingList.value)); // Bumped to v4
-                    localStorage.setItem('groupExpenses_v4', JSON.stringify(groupExpenses.value)); // Bumped to v4
-                    localStorage.setItem('personalExpenses_v4', JSON.stringify(personalExpenses.value)); // Bumped to v4
+                    localStorage.setItem('shoppingList_v4', JSON.stringify(shoppingList.value));
+                    localStorage.setItem('groupExpenses_v4', JSON.stringify(groupExpenses.value));
+                    localStorage.setItem('personalExpenses_v4', JSON.stringify(personalExpenses.value));
+
+                    // Cloud Sync
+                    syncStatus.value = 'syncing'; // Immediate feedback
+                    debouncedSync();
                 }, { deep: true });
 
                 return {
@@ -779,7 +862,8 @@
                     itineraryData, itineraryForm, showAddItineraryModal, openAddItinerary, editItinerary, saveItinerary, deleteItinerary, dragStart, dragEnd, drop, editingTransTime, toggleTransEdit, getPrevLocationName,
                     shoppingList, currentShoppingUser, showAddShoppingModal, newShoppingItem, handleImageUpload, addShoppingItem, showEditShoppingModal, editingShoppingItem, saveShoppingEdit, deleteShoppingItem, openEditShopping, showBoughtModal, selectedShoppingItem, boughtForm, openBoughtModal, confirmBought,
                     currentExpenseTab, currentExpenseUser, totalGroupExpense, getPersonalTotal, showAddExpenseModal, newExpense, addExpense, deleteGroupExpense, deletePersonalExpense, openGoogleMaps,
-                    getUserPrepaid, getSettlement
+                    getUserPrepaid, getSettlement,
+                    syncStatus, syncToCloud // Exposed for error retry click
                 };
             }
         }).mount('#app');
