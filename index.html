@@ -835,7 +835,19 @@
                 const saveShoppingEdit = () => { shoppingList.value[currentShoppingUser.value][editingShoppingIndex.value] = { ...editingShoppingItem.value }; showEditShoppingModal.value = false; };
                 const deleteShoppingItem = () => { if (confirm("刪除？")) { shoppingList.value[currentShoppingUser.value].splice(editingShoppingIndex.value, 1); showEditShoppingModal.value = false; } };
                 const openBoughtModal = (item, index) => { selectedShoppingItem.value = item; selectedShoppingIndex.value = index; boughtForm.value = { isBought: item.bought, price: item.price || '' }; showBoughtModal.value = true; };
-                const confirmBought = () => { const user = currentShoppingUser.value; const item = shoppingList.value[user][selectedShoppingIndex.value]; item.bought = boughtForm.value.isBought; if (item.bought && boughtForm.value.price) { item.boughPrice = boughtForm.value.price; personalExpenses.value[user].push({ name: item.name, amount: boughtForm.value.price, date: new Date().toISOString().split('T')[0] }); alert(`已記帳 NT$${boughtForm.value.price}`); } showBoughtModal.value = false; };
+                const confirmBought = () => {
+                    const user = currentShoppingUser.value;
+                    const item = shoppingList.value[user][selectedShoppingIndex.value];
+                    item.bought = boughtForm.value.isBought;
+                    if (item.bought && boughtForm.value.price) {
+                        item.boughPrice = boughtForm.value.price;
+                        personalExpenses.value[user].push({ name: item.name, amount: boughtForm.value.price, date: new Date().toISOString().split('T')[0] });
+                        alert(`已記帳 NT$${boughtForm.value.price}`);
+                    } else if (!item.bought) {
+                        item.boughPrice = null; // Clear price if unchecked
+                    }
+                    showBoughtModal.value = false;
+                };
 
                 const addExpense = () => { if (!newExpense.value.name || !newExpense.value.amount) return; if (currentExpenseTab.value === 'group') { groupExpenses.value.push({ name: newExpense.value.name, amount: newExpense.value.amount, payer: newExpense.value.payer }); } else { const targetUser = currentExpenseUser.value || newExpense.value.payer; personalExpenses.value[targetUser].push({ name: newExpense.value.name, amount: newExpense.value.amount, date: new Date().toISOString().split('T')[0] }); } showAddExpenseModal.value = false; newExpense.value = { name: '', amount: '', payer: users[0] }; };
                 const deleteGroupExpense = (item) => { const idx = groupExpenses.value.indexOf(item); if (idx > -1 && confirm("刪除？")) groupExpenses.value.splice(idx, 1); };
