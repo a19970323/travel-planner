@@ -618,6 +618,31 @@
 
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbx38lPxzS_rPDti2ZplwPvlraLrBW5DgGJpcuyid8HGuVG3RSnyNAKgY0m-BExrA5vo4w/exec';
 
+        // Image Compression Helper
+        const compressImage = (file, maxWidth = 800) => {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        const scale = maxWidth / img.width;
+                        if (scale >= 1) {
+                            resolve(event.target.result); // No compression needed
+                            return;
+                        }
+                        canvas.width = maxWidth;
+                        canvas.height = img.height * scale;
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        resolve(canvas.toDataURL('image/jpeg', 0.7));
+                    };
+                };
+            });
+        };
+
         // Debounce Helper
         function debounce(func, wait) {
             let timeout;
@@ -782,7 +807,12 @@
                 const toggleTransEdit = (index) => { editingTransTime.value = (editingTransTime.value && editingTransTime.value.index === index) ? null : { dayIndex: currentDayIndex.value, index }; };
                 const fetchExchangeRate = async () => { loadingRate.value = true; try { const res = await fetch('https://api.exchangerate-api.com/v4/latest/JPY'); const data = await res.json(); if (data?.rates?.TWD) exchangeRate.value = data.rates.TWD; } catch (e) { console.error(e); } finally { loadingRate.value = false; } };
 
-                const handleImageUpload = (event) => { const file = event.target.files[0]; if (file) { const reader = new FileReader(); reader.onload = (e) => newShoppingItem.value.image = e.target.result; reader.readAsDataURL(file); } };
+                const handleImageUpload = async (event) => {
+                    const file = event.target.files[0];
+                    if (file) {
+                        newShoppingItem.value.image = await compressImage(file);
+                    }
+                };
                 const addShoppingItem = () => { if (!newShoppingItem.value.name) return; shoppingList.value[currentShoppingUser.value].push({ name: newShoppingItem.value.name, price: newShoppingItem.value.price, image: newShoppingItem.value.image, bought: false }); showAddShoppingModal.value = false; newShoppingItem.value = { name: '', price: '', image: null }; };
                 const openEditShopping = (item, index) => { editingShoppingItem.value = { ...item }; editingShoppingIndex.value = index; showEditShoppingModal.value = true; };
                 const saveShoppingEdit = () => { shoppingList.value[currentShoppingUser.value][editingShoppingIndex.value] = { ...editingShoppingItem.value }; showEditShoppingModal.value = false; };
@@ -846,10 +876,15 @@
 
                 watch([itineraryData, shoppingList, groupExpenses, personalExpenses], () => {
                     // Local Persist
-                    localStorage.setItem('itineraryData_v4', JSON.stringify(itineraryData.value));
-                    localStorage.setItem('shoppingList_v4', JSON.stringify(shoppingList.value));
-                    localStorage.setItem('groupExpenses_v4', JSON.stringify(groupExpenses.value));
-                    localStorage.setItem('personalExpenses_v4', JSON.stringify(personalExpenses.value));
+                    try {
+                        localStorage.setItem('itineraryData_v4', JSON.stringify(itineraryData.value));
+                        localStorage.setItem('shoppingList_v4', JSON.stringify(shoppingList.value));
+                        localStorage.setItem('groupExpenses_v4', JSON.stringify(groupExpenses.value));
+                        localStorage.setItem('personalExpenses_v4', JSON.stringify(personalExpenses.value));
+                    } catch (e) {
+                        console.error('LocalStorage Limit Exceeded!', e);
+                        // Continue to Cloud Sync even if LocalStorage fails
+                    }
 
                     // Cloud Sync
                     syncStatus.value = 'syncing'; // Immediate feedback
