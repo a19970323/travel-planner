@@ -182,10 +182,9 @@
                     </div>
 
                     <!-- List -->
-                    <div class="space-y-0" @dragover.prevent @drop="drop($event)">
-                        <div v-for="(item, index) in currentDayItinerary" :key="item.id" class="relative"
-                            draggable="true" @dragstart="dragStart($event, index)" @dragend="dragEnd($event)"
-                            @drop="drop($event, index)">
+                    <div class="space-y-0">
+                        <div v-for="(item, index) in currentDayItinerary" :key="item.id" @click="editItinerary(item)"
+                            class="timeline-item mb-6 relative pl-8 border-l-2 border-gray-100 last:border-0 group transition-all duration-300 hover:pl-10">
 
                             <!-- Travel Connector -->
                             <div class="flex flex-col items-center py-2 relative group cursor-pointer"
@@ -794,20 +793,17 @@
                     } else {
                         list.push({ ...itineraryForm.value, id: Date.now(), transTime: '15 min', transMode: 'walk' });
                     }
+                    sortItinerary(); // Auto sort after save
                     showAddItineraryModal.value = false;
                 };
                 const deleteItinerary = () => { if (confirm("確定刪除？")) { const list = itineraryData.value[currentDayIndex.value]; const index = list.findIndex(i => i.id === itineraryForm.value.id); if (index !== -1) list.splice(index, 1); showAddItineraryModal.value = false; } };
 
-                const dragStart = (event, index) => { event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.dropEffect = 'move'; event.dataTransfer.setData('text/plain', index); event.target.classList.add('dragging'); };
-                const dragEnd = (event) => { event.target.classList.remove('dragging'); };
-                const drop = (event, dropIndex) => {
-                    const text = event.dataTransfer.getData('text/plain');
-                    if (text === '') return;
-                    const dragIndex = parseInt(text);
-                    if (isNaN(dragIndex) || dragIndex === dropIndex) return;
-                    const list = itineraryData.value[currentDayIndex.value];
-                    const item = list.splice(dragIndex, 1)[0];
-                    list.splice(dropIndex, 0, item);
+                const sortItinerary = () => {
+                    if (itineraryData.value[currentDayIndex.value]) {
+                        itineraryData.value[currentDayIndex.value].sort((a, b) => {
+                            return (a.time || '00:00').localeCompare(b.time || '00:00');
+                        });
+                    }
                 };
 
                 const toggleTransEdit = (index) => { editingTransTime.value = (editingTransTime.value && editingTransTime.value.index === index) ? null : { dayIndex: currentDayIndex.value, index }; };
@@ -864,6 +860,14 @@
                         if (data.shoppingList_v4) shoppingList.value = data.shoppingList_v4;
                         if (data.groupExpenses_v4) groupExpenses.value = data.groupExpenses_v4;
                         if (data.personalExpenses_v4) personalExpenses.value = data.personalExpenses_v4;
+
+                        // Initial sort for all days
+                        for (let i = 0; i < days.length; i++) {
+                            if (itineraryData.value[i]) {
+                                itineraryData.value[i].sort((a, b) => (a.time || '00:00').localeCompare(b.time || '00:00'));
+                            }
+                        }
+
                         syncStatus.value = 'success';
                         console.log('Loaded from cloud');
                     } catch (e) {
