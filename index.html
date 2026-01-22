@@ -490,9 +490,9 @@
                                             <!-- Right: Amount -->
                                             <div class="text-right">
                                                 <div
-                                                    :class="['font-bold text-lg', item.isPayer ? 'text-red-500' : 'text-green-600']">
-                                                    {{ item.isPayer ? '-' : '' }}NT$ {{
-                                                    Math.abs(item.userAmount).toLocaleString() }}
+                                                    :class="['font-bold text-lg', item.isPayer ? 'text-red-500' : 'text-gray-800']">
+                                                    -NT$ {{
+                                                    Math.round(Math.abs(item.userAmount)).toLocaleString() }}
                                                 </div>
                                                 <div class="text-[10px] text-gray-300">
                                                     {{ item.isPayer ? '支出' : '分攤' }}
