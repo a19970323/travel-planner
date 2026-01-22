@@ -402,7 +402,8 @@
                     <div class="space-y-8">
                         <div v-for="user in users" :key="user">
                             <!-- Header Card -->
-                            <div class="glass-panel p-5 rounded-3xl relative overflow-hidden mb-4">
+                            <div @click="toggleExpandedUser(user)"
+                                class="glass-panel p-5 rounded-3xl relative overflow-hidden mb-4 cursor-pointer hover:shadow-md transition-all">
                                 <div
                                     class="absolute -right-4 -top-4 w-24 h-24 bg-gray-100 rounded-full opacity-50 blur-2xl">
                                 </div>
@@ -414,13 +415,17 @@
                                                 {{ user[0] }}</div>
                                             {{ user }}
                                         </h3>
-                                        <div class="text-xs text-gray-400">總現金流 (Net)</div>
+                                        <div class="text-xs text-gray-400 flex items-center">
+                                            總現金流 (Net)
+                                            <i
+                                                :class="['fas ml-2 transition-transform', expandedUser === user ? 'fa-chevron-up rotate-180' : 'fa-chevron-down']"></i>
+                                        </div>
                                     </div>
 
                                     <!-- Total Stats -->
                                     <div
                                         :class="['text-3xl font-bold mb-4', getUserNet(user) >= 0 ? 'text-green-600' : 'text-red-500']">
-                                        {{ getUserNet(user) >= 0 ? '+' : '' }}¥{{
+                                        {{ getUserNet(user) >= 0 ? '+' : '' }}NT$ {{
                                         Math.abs(getUserNet(user)).toLocaleString() }}
                                     </div>
 
@@ -431,7 +436,7 @@
                                             <span class="text-gray-500">vs {{ other }}</span>
                                             <span
                                                 :class="['font-bold', getPairBalance(user, other) >= 0 ? 'text-green-600' : 'text-red-500']">
-                                                {{ getPairBalance(user, other) >= 0 ? '應收' : '應付' }} ¥{{
+                                                {{ getPairBalance(user, other) >= 0 ? '應收' : '應付' }} NT$ {{
                                                 Math.abs(getPairBalance(user, other)).toLocaleString() }}
                                             </span>
                                         </div>
@@ -439,46 +444,49 @@
                                 </div>
                             </div>
 
-                            <!-- Transaction List -->
-                            <div class="space-y-3 pl-2">
-                                <div v-for="item in getUserTransactions(user)" :key="item.id" @click="editExpense(item)"
-                                    :class="['p-4 rounded-xl flex justify-between items-center transition-all cursor-pointer border-l-4 shadow-sm bg-white', 
-                                    item.isPayer ? 'border-red-400' : 'border-green-400']">
+                            <!-- Transaction List (Collapsible) -->
+                            <transition name="fade">
+                                <div v-if="expandedUser === user" class="space-y-3 pl-2">
+                                    <div v-for="item in getUserTransactions(user)" :key="item.id"
+                                        @click="editExpense(item)" :class="['p-4 rounded-xl flex justify-between items-center transition-all cursor-pointer border-l-4 shadow-sm bg-white', 
+                                        item.isPayer ? 'border-red-400' : 'border-green-400']">
 
-                                    <!-- Left: Info -->
-                                    <div class="flex items-center space-x-3">
-                                        <div
-                                            :class="['w-10 h-10 rounded-full flex items-center justify-center text-lg', getCategoryStyle(item.category)?.bg, getCategoryStyle(item.category)?.color]">
-                                            <i :class="getCategoryStyle(item.category)?.icon"></i>
+                                        <!-- Left: Info -->
+                                        <div class="flex items-center space-x-3">
+                                            <div
+                                                :class="['w-10 h-10 rounded-full flex items-center justify-center text-lg', getCategoryStyle(item.category)?.bg, getCategoryStyle(item.category)?.color]">
+                                                <i :class="getCategoryStyle(item.category)?.icon"></i>
+                                            </div>
+                                            <div>
+                                                <div class="font-bold text-gray-800">{{ item.name }}</div>
+                                                <div class="text-xs text-gray-400">
+                                                    {{ item.date.slice(5) }} {{ item.time }}
+                                                    <span
+                                                        v-if="item.splitters.length < 3 && !item.splitters.includes(user)"
+                                                        class="bg-gray-100 px-1 rounded ml-1">
+                                                        幫 {{ item.splitters.join(',') }} 付
+                                                    </span>
+                                                    <span v-if="!item.isPayer" class="bg-gray-100 px-1 rounded ml-1">
+                                                        付給 {{ item.payer }}
+                                                    </span>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <div class="font-bold text-gray-800">{{ item.name }}</div>
-                                            <div class="text-xs text-gray-400">
-                                                {{ item.date.slice(5) }} {{ item.time }}
-                                                <span v-if="item.splitters.length < 3 && !item.splitters.includes(user)"
-                                                    class="bg-gray-100 px-1 rounded ml-1">
-                                                    幫 {{ item.splitters.join(',') }} 付
-                                                </span>
-                                                <span v-if="!item.isPayer" class="bg-gray-100 px-1 rounded ml-1">
-                                                    付給 {{ item.payer }}
-                                                </span>
+
+                                        <!-- Right: Amount -->
+                                        <div class="text-right">
+                                            <div
+                                                :class="['font-bold text-lg', item.isPayer ? 'text-red-500' : 'text-green-600']">
+                                                {{ item.isPayer ? '-' : '' }}NT$ {{
+                                                Math.abs(item.userAmount).toLocaleString() }}
+                                            </div>
+                                            <div class="text-[10px] text-gray-300">
+                                                {{ item.isPayer ? '支出' : '分攤' }}
                                             </div>
                                         </div>
                                     </div>
-
-                                    <!-- Right: Amount -->
-                                    <div class="text-right">
-                                        <div
-                                            :class="['font-bold text-lg', item.isPayer ? 'text-red-500' : 'text-green-600']">
-                                            {{ item.isPayer ? '-' : '' }}¥{{ Math.abs(item.userAmount).toLocaleString()
-                                            }}
-                                        </div>
-                                        <div class="text-[10px] text-gray-300">
-                                            {{ item.isPayer ? '支出' : '分攤' }}
-                                        </div>
-                                    </div>
                                 </div>
-                            </div>
+                            </transition>
                         </div>
                     </div>
 
@@ -622,7 +630,7 @@
 
                     <input v-model="newExpense.name" placeholder="項目名稱"
                         class="w-full p-3 bg-gray-50 rounded-xl font-bold">
-                    <input type="number" v-model="newExpense.amount" placeholder="金額 (JP¥)"
+                    <input type="number" v-model="newExpense.amount" placeholder="金額 (NT$)"
                         class="w-full p-3 bg-gray-50 rounded-xl text-lg font-bold">
 
                     <!-- Payer -->
@@ -787,6 +795,7 @@
                 const shoppingList = ref(safeParse('shoppingList_v4', { '周瑾': [], '玉華': [], '佳蓉': [] }));
                 // New Expense Structure: Array of { id, date, time, category, name, amount, payer, splitters: [], note }
                 const expenseList = ref(safeParse('expenseList_v1', []));
+                const expandedUser = ref(null); // Accordion state
 
                 const currentShoppingUser = ref(null);
 
@@ -1118,7 +1127,8 @@
                     itineraryData, itineraryForm, showAddItineraryModal, openAddItinerary, editItinerary, saveItinerary, deleteItinerary, editingTransTime, toggleTransEdit, getPrevLocationName,
                     shoppingList, currentShoppingUser, showAddShoppingModal, newShoppingItem, handleImageUpload, addShoppingItem, showEditShoppingModal, editingShoppingItem, saveShoppingEdit, deleteShoppingItem, openEditShopping, showBoughtModal, selectedShoppingItem, boughtForm, openBoughtModal, confirmBought,
                     expenseList, showAddExpenseModal, newExpense, openAddExpense, addExpense: saveExpense, saveExpense, deleteExpense, toggleSplitUser, getUserNet, getPairBalance, getUserTransactions, openGoogleMaps,
-                    syncStatus, syncToCloud, isProcessingImage // Exposed text
+                    syncStatus, syncToCloud, isProcessingImage, // Exposed text
+                    expandedUser, toggleExpandedUser: (user) => expandedUser.value = expandedUser.value === user ? null : user // Accordion toggle
                 };
             }
         }).mount('#app');
