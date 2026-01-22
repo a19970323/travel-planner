@@ -393,103 +393,102 @@
                 </div>
             </transition>
 
-            <!-- Tab: Expenses (NT$ + Settlement) -->
+            <!-- Tab: Expenses (V5 Overhaul) -->
             <transition name="fade" mode="out-in">
-                <div v-if="currentTab === 'expenses'" key="expenses">
+                <div v-if="currentTab === 'expenses'" key="expenses" class="pb-20">
                     <h2 class="text-2xl font-bold text-deep-blue mb-4">花費紀錄</h2>
-                    <div class="flex space-x-2 mb-6 bg-white/50 p-1 rounded-xl">
-                        <button v-for="type in ['group', 'personal']" :key="type"
-                            @click="currentExpenseTab = type; currentExpenseUser = null"
-                            :class="['flex-1 py-2 rounded-lg text-sm font-bold transition-all', currentExpenseTab === type ? 'bg-deep-blue text-white shadow' : 'text-gray-500']">{{
-                            type === 'group' ? '團體公費' : '個人花費' }}</button>
-                    </div>
 
-                    <!-- Group Expenses -->
-                    <div v-if="currentExpenseTab === 'group'">
-                        <div class="bg-gray-800 text-white p-5 rounded-2xl shadow-lg mb-6">
-                            <div class="text-sm opacity-80">團體總支出 (NT$)</div>
-                            <div class="text-4xl font-bold mt-1">NT$ {{ totalGroupExpense.toLocaleString() }}</div>
-                        </div>
-                        <div class="space-y-4">
-                            <div v-for="user in users" :key="user" class="glass-panel p-4 rounded-2xl">
-                                <div class="flex justify-between items-center mb-1">
-                                    <div class="font-bold flex items-center">
-                                        <div
-                                            class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mr-2 text-xs text-deep-blue">
-                                            {{ user[0] }}</div>{{ user }} 預支
-                                    </div>
-                                    <div class="font-bold text-deep-blue">NT$ {{ getUserPrepaid(user).toLocaleString()
-                                        }}</div>
+                    <!-- User Blocks -->
+                    <div class="space-y-8">
+                        <div v-for="user in users" :key="user">
+                            <!-- Header Card -->
+                            <div class="glass-panel p-5 rounded-3xl relative overflow-hidden mb-4">
+                                <div
+                                    class="absolute -right-4 -top-4 w-24 h-24 bg-gray-100 rounded-full opacity-50 blur-2xl">
                                 </div>
-                                <!-- Settlement Result (New) -->
-                                <div class="mb-3 text-right">
-                                    <div class="text-xs font-bold px-2 py-1 rounded inline-block"
-                                        :class="getSettlement(user) > 0 ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'">
-                                        {{ getSettlement(user) > 0 ? '應支付' : '應收取' }} NT$ {{
-                                        Math.abs(getSettlement(user)).toLocaleString() }}
+                                <div class="relative z-10">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <h3 class="text-xl font-bold flex items-center">
+                                            <div
+                                                class="w-8 h-8 rounded-full bg-deep-blue text-white flex items-center justify-center mr-2 text-sm">
+                                                {{ user[0] }}</div>
+                                            {{ user }}
+                                        </h3>
+                                        <div class="text-xs text-gray-400">總現金流 (Net)</div>
                                     </div>
-                                </div>
 
-                                <div class="space-y-2 border-t pt-2 border-gray-100">
-                                    <div v-for="(item, idx) in groupExpenses.filter(e => e.payer === user)" :key="idx"
-                                        class="flex justify-between text-sm">
-                                        <span class="text-gray-600">{{ item.name }}</span>
-                                        <div class="flex items-center space-x-2"><span>NT${{
-                                                Number(item.amount).toLocaleString() }}</span><button
-                                                @click="deleteGroupExpense(item)"
-                                                class="text-gray-300 hover:text-red-400"><i
-                                                    class="fas fa-times"></i></button></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Personal Expenses -->
-                    <div v-if="currentExpenseTab === 'personal'">
-                        <div v-if="!currentExpenseUser" class="grid grid-cols-1 gap-4">
-                            <div v-for="user in users" :key="user" @click="currentExpenseUser = user"
-                                class="glass-panel p-6 rounded-2xl flex items-center justify-between hover:bg-white transition-colors cursor-pointer">
-                                <div class="flex items-center space-x-4">
+                                    <!-- Total Stats -->
                                     <div
-                                        class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-green-700 font-bold text-xl">
-                                        {{ user[0] }}</div>
-                                    <div>
-                                        <div class="font-bold text-lg">{{ user }}的花費</div>
-                                        <div class="text-xs text-gray-400">總計: NT$ {{
-                                            getPersonalTotal(user).toLocaleString() }}</div>
+                                        :class="['text-3xl font-bold mb-4', getUserNet(user) >= 0 ? 'text-green-600' : 'text-red-500']">
+                                        {{ getUserNet(user) >= 0 ? '+' : '' }}¥{{
+                                        Math.abs(getUserNet(user)).toLocaleString() }}
                                     </div>
-                                </div><i class="fas fa-chevron-right text-gray-300"></i>
-                            </div>
-                        </div>
-                        <div v-else>
-                            <button @click="currentExpenseUser = null"
-                                class="mb-4 flex items-center text-gray-400 hover:text-deep-blue"><i
-                                    class="fas fa-arrow-left mr-2"></i> 返回列表</button>
-                            <div class="bg-green-600 text-white p-5 rounded-2xl shadow-lg mb-6">
-                                <div class="text-sm opacity-80">{{ currentExpenseUser }} 總支出 (NT$)</div>
-                                <div class="text-4xl font-bold mt-1">NT$ {{
-                                    getPersonalTotal(currentExpenseUser).toLocaleString() }}</div>
-                            </div>
-                            <div class="space-y-3">
-                                <div v-for="(item, index) in personalExpenses[currentExpenseUser]" :key="index"
-                                    class="glass-panel p-4 rounded-xl flex justify-between items-center">
-                                    <div>
-                                        <div class="font-bold text-gray-800">{{ item.name }}</div>
-                                        <div class="text-xs text-gray-400 mt-0.5">{{ item.date }}</div>
+
+                                    <!-- Settlement Detail -->
+                                    <div class="text-sm space-y-1 border-t border-gray-100 pt-3">
+                                        <div v-for="other in users.filter(u => u !== user)" :key="other"
+                                            class="flex justify-between items-center">
+                                            <span class="text-gray-500">vs {{ other }}</span>
+                                            <span
+                                                :class="['font-bold', getPairBalance(user, other) >= 0 ? 'text-green-600' : 'text-red-500']">
+                                                {{ getPairBalance(user, other) >= 0 ? '應收' : '應付' }} ¥{{
+                                                Math.abs(getPairBalance(user, other)).toLocaleString() }}
+                                            </span>
+                                        </div>
                                     </div>
+                                </div>
+                            </div>
+
+                            <!-- Transaction List -->
+                            <div class="space-y-3 pl-2">
+                                <div v-for="item in getUserTransactions(user)" :key="item.id" @click="editExpense(item)"
+                                    :class="['p-4 rounded-xl flex justify-between items-center transition-all cursor-pointer border-l-4 shadow-sm bg-white', 
+                                    item.isPayer ? 'border-red-400' : 'border-green-400']">
+
+                                    <!-- Left: Info -->
+                                    <div class="flex items-center space-x-3">
+                                        <div
+                                            :class="['w-10 h-10 rounded-full flex items-center justify-center text-lg', getCategoryStyle(item.category)?.bg, getCategoryStyle(item.category)?.color]">
+                                            <i :class="getCategoryStyle(item.category)?.icon"></i>
+                                        </div>
+                                        <div>
+                                            <div class="font-bold text-gray-800">{{ item.name }}</div>
+                                            <div class="text-xs text-gray-400">
+                                                {{ item.date.slice(5) }} {{ item.time }}
+                                                <span v-if="item.splitters.length < 3 && !item.splitters.includes(user)"
+                                                    class="bg-gray-100 px-1 rounded ml-1">
+                                                    幫 {{ item.splitters.join(',') }} 付
+                                                </span>
+                                                <span v-if="!item.isPayer" class="bg-gray-100 px-1 rounded ml-1">
+                                                    付給 {{ item.payer }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Right: Amount -->
                                     <div class="text-right">
-                                        <div class="font-bold text-lg">NT${{ Number(item.amount).toLocaleString() }}
-                                        </div><button @click="deletePersonalExpense(currentExpenseUser, index)"
-                                            class="text-xs text-red-300 p-1"><i class="fas fa-trash"></i></button>
+                                        <div
+                                            :class="['font-bold text-lg', item.isPayer ? 'text-red-500' : 'text-green-600']">
+                                            {{ item.isPayer ? '-' : '' }}¥{{ Math.abs(item.userAmount).toLocaleString()
+                                            }}
+                                        </div>
+                                        <div class="text-[10px] text-gray-300">
+                                            {{ item.isPayer ? '支出' : '分攤' }}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <button @click="showAddExpenseModal = true"
-                        class="fixed bottom-6 right-6 w-14 h-14 bg-deep-blue text-white rounded-full shadow-2xl flex items-center justify-center text-2xl z-50 hover:scale-110 transition-transform"><i
-                            class="fas fa-plus"></i></button>
+
+                    <!-- Add Button (Sticky for Tablet Fix) -->
+                    <button @click="openAddExpense"
+                        class="fixed bottom-6 right-6 w-14 h-14 bg-deep-blue text-white rounded-full shadow-2xl flex items-center justify-center text-2xl z-[9999] hover:scale-110 transition-transform cursor-pointer block">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                    <!-- Extra spacer for scrolling -->
+                    <div class="h-24"></div>
                 </div>
             </transition>
 
@@ -595,21 +594,65 @@
         <div v-if="showAddExpenseModal"
             class="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm"
             @click.self="showAddExpenseModal = false">
-            <div class="bg-white w-full max-w-md rounded-t-3xl p-6 shadow-2xl animate-slide-up">
-                <h3 class="font-bold text-xl mb-4 text-center">新增{{ currentExpenseTab === 'group' ? '團體' : '個人' }}花費
-                </h3>
+            <div
+                class="bg-white w-full max-w-md rounded-t-3xl p-6 shadow-2xl animate-slide-up max-h-[90vh] overflow-y-auto">
+                <nav class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-xl">{{ newExpense.id ? '編輯花費' : '新增花費' }}</h3>
+                    <button v-if="newExpense.id" @click="deleteExpense"
+                        class="text-red-400 text-sm border border-red-200 px-3 py-1 rounded-full">
+                        <i class="fas fa-trash-alt mr-1"></i>刪除
+                    </button>
+                </nav>
                 <div class="space-y-4">
-                    <div><label class="block text-xs text-gray-400 mb-1 ml-1">{{ currentExpenseTab === 'group' ? '誰預支的？'
-                            : '記在誰的帳上？' }}</label>
-                        <div class="flex space-x-2"><button v-for="user in users" :key="user"
-                                @click="newExpense.payer = user"
-                                :class="['flex-1 py-2 rounded-xl text-sm font-bold border-2', newExpense.payer === user ? 'border-deep-blue bg-blue-50 text-deep-blue' : 'border-gray-100 text-gray-400']">{{
-                                user }}</button></div>
-                    </div><input v-model="newExpense.name" placeholder="項目名稱"
-                        class="w-full p-3 bg-gray-50 rounded-xl"><input type="number" v-model="newExpense.amount"
-                        placeholder="金額 (NT$)" class="w-full p-3 bg-gray-50 rounded-xl text-lg font-bold"><button
-                        @click="addExpense"
-                        class="w-full bg-deep-blue text-white py-3 rounded-xl font-bold mt-2">記帳</button>
+                    <!-- Date & Time -->
+                    <div class="flex space-x-2">
+                        <input type="date" v-model="newExpense.date" class="flex-1 p-3 bg-gray-50 rounded-xl">
+                        <input type="time" v-model="newExpense.time" class="w-32 p-3 bg-gray-50 rounded-xl">
+                    </div>
+
+                    <!-- Category -->
+                    <div class="grid grid-cols-6 gap-2">
+                        <button v-for="cat in categories.filter(c => c.id !== 'flight')" :key="cat.id"
+                            @click="newExpense.category = cat.id"
+                            :class="['flex flex-col items-center justify-center p-2 rounded-xl text-xs transition-all', newExpense.category === cat.id ? 'bg-deep-blue text-white shadow-lg scale-105' : 'bg-gray-50 text-gray-400']">
+                            <i :class="cat.icon" class="text-xl mb-1"></i>
+                            {{ cat.name }}
+                        </button>
+                    </div>
+
+                    <input v-model="newExpense.name" placeholder="項目名稱"
+                        class="w-full p-3 bg-gray-50 rounded-xl font-bold">
+                    <input type="number" v-model="newExpense.amount" placeholder="金額 (JP¥)"
+                        class="w-full p-3 bg-gray-50 rounded-xl text-lg font-bold">
+
+                    <!-- Payer -->
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1 ml-1">誰先付錢？</label>
+                        <div class="flex space-x-2">
+                            <button v-for="user in users" :key="user" @click="newExpense.payer = user"
+                                :class="['flex-1 py-2 rounded-xl text-sm font-bold border-2 transition-all', newExpense.payer === user ? 'border-deep-blue bg-blue-50 text-deep-blue' : 'border-gray-100 text-gray-400']">
+                                {{ user }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Split -->
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1 ml-1">分給誰？(默認平分)</label>
+                        <div class="flex space-x-2">
+                            <button v-for="user in users" :key="user" @click="toggleSplitUser(user)"
+                                :class="['flex-1 py-2 rounded-xl text-sm font-bold border-2 transition-all', newExpense.splitters.includes(user) ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-100 text-gray-300']">
+                                <i v-if="newExpense.splitters.includes(user)" class="fas fa-check mr-1"></i>
+                                {{ user }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <textarea v-model="newExpense.note" placeholder="備註..." rows="2"
+                        class="w-full p-3 bg-gray-50 rounded-xl text-sm"></textarea>
+
+                    <button @click="saveExpense"
+                        class="w-full bg-deep-blue text-white py-3 rounded-xl font-bold mt-2">儲存紀錄</button>
                 </div>
             </div>
         </div>
@@ -739,15 +782,14 @@
                     ]
                 };
 
-                // STORAGE INIT (V4)
+                // STORAGE INIT (V5 - new Expense Structure)
                 const itineraryData = ref(safeParse('itineraryData_v4', defaultItinerary));
                 const shoppingList = ref(safeParse('shoppingList_v4', { '周瑾': [], '玉華': [], '佳蓉': [] }));
-                const groupExpenses = ref(safeParse('groupExpenses_v4', []));
-                const personalExpenses = ref(safeParse('personalExpenses_v4', { '周瑾': [], '玉華': [], '佳蓉': [] }));
+                // New Expense Structure: Array of { id, date, time, category, name, amount, payer, splitters: [], note }
+                const expenseList = ref(safeParse('expenseList_v1', []));
 
                 const currentShoppingUser = ref(null);
-                const currentExpenseTab = ref('group');
-                const currentExpenseUser = ref(null);
+
 
                 // STATE
                 const showAddItineraryModal = ref(false);
@@ -769,18 +811,12 @@
                 // COMPUTED
                 const currentDayItinerary = computed(() => itineraryData.value[currentDayIndex.value] || []);
                 const calculatedTWD = computed(() => !exchangeAmount.value ? 0 : Math.round(exchangeAmount.value * exchangeRate.value));
-                const totalGroupExpense = computed(() => groupExpenses.value.reduce((sum, item) => sum + Number(item.amount), 0));
-                const getPersonalTotal = (user) => personalExpenses.value[user].reduce((sum, item) => sum + Number(item.amount), 0);
                 const getCategoryStyle = (id) => categories.find(c => c.id === id) || categories[6];
                 const getPrevLocationName = (index) => index === 0 ? "前一晚住宿" : itineraryData.value[currentDayIndex.value][index - 1].name;
 
+
                 // Settlement Helpers
-                const getUserPrepaid = (user) => groupExpenses.value.filter(e => e.payer === user).reduce((acc, cur) => acc + Number(cur.amount), 0);
-                const getSettlement = (user) => {
-                    const share = totalGroupExpense.value / 3;
-                    const prepaid = getUserPrepaid(user);
-                    return Math.round(share - prepaid);
-                };
+                // Removed old settlement helpers
 
                 // METHODS
                 const openAddItinerary = () => { itineraryForm.value = { id: null, dayIndex: currentDayIndex.value, category: 'attraction', name: '', location: '', time: '', hours: '', ticket: '', note: '', price: '' }; showAddItineraryModal.value = true; };
@@ -845,9 +881,164 @@
                     showBoughtModal.value = false;
                 };
 
-                const addExpense = () => { if (!newExpense.value.name || !newExpense.value.amount) return; if (currentExpenseTab.value === 'group') { groupExpenses.value.push({ name: newExpense.value.name, amount: newExpense.value.amount, payer: newExpense.value.payer }); } else { const targetUser = currentExpenseUser.value || newExpense.value.payer; personalExpenses.value[targetUser].push({ name: newExpense.value.name, amount: newExpense.value.amount, date: new Date().toISOString().split('T')[0] }); } showAddExpenseModal.value = false; newExpense.value = { name: '', amount: '', payer: users[0] }; };
-                const deleteGroupExpense = (item) => { const idx = groupExpenses.value.indexOf(item); if (idx > -1 && confirm("刪除？")) groupExpenses.value.splice(idx, 1); };
-                const deletePersonalExpense = (user, index) => { if (confirm("刪除？")) personalExpenses.value[user].splice(index, 1); };
+
+                // EXPENSE LOGIC (New V1)
+                const openAddExpense = () => {
+                    const now = new Date();
+                    const dateStr = now.toISOString().split('T')[0];
+                    const timeStr = now.toTimeString().slice(0, 5);
+                    newExpense.value = {
+                        id: null,
+                        date: dateStr,
+                        time: timeStr,
+                        category: 'food',
+                        name: '',
+                        amount: '',
+                        payer: users[0],
+                        splitters: [...users],
+                        note: ''
+                    };
+                    showAddExpenseModal.value = true;
+                };
+
+                const editExpense = (item) => {
+                    // Clone to avoid direct mutation issues
+                    newExpense.value = JSON.parse(JSON.stringify(item));
+                    showAddExpenseModal.value = true;
+                };
+
+                const toggleSplitUser = (user) => {
+                    const idx = newExpense.value.splitters.indexOf(user);
+                    if (idx === -1) newExpense.value.splitters.push(user);
+                    else newExpense.value.splitters.splice(idx, 1);
+                };
+
+                const saveExpense = () => {
+                    if (!newExpense.value.name || !newExpense.value.amount || newExpense.value.splitters.length === 0) return;
+
+                    if (newExpense.value.id) {
+                        // Edit
+                        const index = expenseList.value.findIndex(e => e.id === newExpense.value.id);
+                        if (index !== -1) expenseList.value[index] = { ...newExpense.value };
+                    } else {
+                        // New
+                        expenseList.value.push({ ...newExpense.value, id: Date.now() });
+                    }
+
+                    // Sort by Date/Time
+                    expenseList.value.sort((a, b) => {
+                        const dtA = a.date + a.time;
+                        const dtB = b.date + b.time;
+                        return dtB.localeCompare(dtA); // Newest first
+                    });
+
+                    showAddExpenseModal.value = false;
+                };
+
+                const deleteExpense = () => {
+                    if (confirm('確定刪除此筆花費？')) {
+                        const index = expenseList.value.findIndex(e => e.id === newExpense.value.id);
+                        if (index !== -1) expenseList.value.splice(index, 1);
+                        showAddExpenseModal.value = false;
+                    }
+                };
+
+                // Expense Computations
+                const getUserNet = (user) => {
+                    let net = 0;
+                    // + Paid by me
+                    net += expenseList.value.filter(e => e.payer === user).reduce((sum, e) => sum + Number(e.amount), 0);
+                    // - My share of any expense
+                    expenseList.value.forEach(e => {
+                        if (e.splitters.includes(user)) {
+                            net -= (Number(e.amount) / e.splitters.length);
+                        }
+                    });
+                    return Math.round(net);
+                };
+
+                const getPairBalance = (user, other) => {
+                    let balance = 0; // + means Other owes User (User receives)
+
+                    expenseList.value.forEach(e => {
+                        const amount = Number(e.amount);
+                        const splitCount = e.splitters.length;
+                        const share = amount / splitCount;
+
+                        // Case 1: User paid, Other consumed -> Other owes User (+balance)
+                        if (e.payer === user && e.splitters.includes(other)) {
+                            balance += share;
+                        }
+
+                        // Case 2: Other paid, User consumed -> User owes Other (-balance)
+                        if (e.payer === other && e.splitters.includes(user)) {
+                            balance -= share;
+                        }
+                    });
+                    return Math.round(balance);
+                };
+
+                const getUserTransactions = (user) => {
+                    // Returns list of { ...item, isPayer: bool, userAmount: number }
+                    // Filter: User is payer OR User is splitter
+                    const list = expenseList.value.filter(e => e.payer === user || e.splitters.includes(user));
+
+                    return list.map(e => {
+                        const isPayer = e.payer === user;
+                        // If I paid, amount is full amount paid out? User asked for "Expense Record"
+                        // If I paid $300 for 3 ppl. My valid expense is $100. But cash flow is -$300.
+                        // User wanted "Red" background for Expense.
+                        // Let's show the "Cash Impact" on this line.
+                        // If Payer: -Full Amount.
+                        // If Splitter (not payer): "Consumed" $100? No cash flow yet.
+                        // Wait, user said: "Below list records every expense... with target object"
+                        // If I am just a splitter, showing it might be confusing if it's not a settlement.
+                        // BUT, if I don't show it, I don't know what I owe.
+                        // Let's refine based on "Red/Green".
+                        // Logic:
+                        // Show all items involved.
+                        // Display Amount:
+                        //   If Payer: Show Total Amount Paid (Red) - "Paid ¥3000"
+                        //   If Splitter (not Payer): Show My Share (Green?? No, Debt).
+
+                        // Revised Display Logic based on "Expense=Red, Income=Green" mismatch:
+                        // Maybe user implies "Expense" = Spending money. "Income" = Receiving money.
+                        // Standard consumption is NOT income.
+                        // Let's Stick to:
+                        // Payer View: I paid $300. (Red).
+                        // Splitter View: I owe $100. (Gray/Neutral? Or Red?).
+
+                        // Let's try this:
+                        // Only show if Payer? No.
+                        // User asked for "Expense Record... per user".
+                        // Let's show raw transaction.
+                        // If Payer: Amount = Total. Color = Red.
+                        // If Not Payer: Amount = Share. Color = Orange (Owe).
+
+                        // Wait, "Income Green". When do I get Income?
+                        // Only if someone pays ME?
+                        // Or maybe "Negative Expense"?
+
+                        // Let's implement generic view:
+                        // Items sorted by date.
+                        // If Payer -> Red.
+                        // If Not Payer -> Green (Benefit? No).
+
+                        // Let's stick to the prompt's simplicity:
+                        // "Expense Record background Red, Income Green".
+                        // I will assume for now:
+                        // If (Payer == User) => Red (Outflow).
+                        // If (Payer != User) => Green (Inflow / Benefit received).
+                        // This matches "Income" as "Value Received".
+
+                        return {
+                            ...e,
+                            isPayer,
+                            userAmount: isPayer ? Number(e.amount) : (Number(e.amount) / e.splitters.length)
+                        };
+                    });
+                };
+
                 const openGoogleMaps = (name) => { window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`, '_blank'); };
 
                 // AUTO SYNC LOGIC
@@ -858,8 +1049,7 @@
                         const data = await res.json();
                         if (data.itineraryData_v4) itineraryData.value = data.itineraryData_v4;
                         if (data.shoppingList_v4) shoppingList.value = data.shoppingList_v4;
-                        if (data.groupExpenses_v4) groupExpenses.value = data.groupExpenses_v4;
-                        if (data.personalExpenses_v4) personalExpenses.value = data.personalExpenses_v4;
+                        if (data.expenseList_v1) expenseList.value = data.expenseList_v1; // Load V1
 
                         // Initial sort for all days
                         for (let i = 0; i < days.length; i++) {
@@ -881,8 +1071,7 @@
                     const payload = {
                         itineraryData_v4: itineraryData.value,
                         shoppingList_v4: shoppingList.value,
-                        groupExpenses_v4: groupExpenses.value,
-                        personalExpenses_v4: personalExpenses.value
+                        expenseList_v1: expenseList.value // New V1 for Expenses
                     };
                     try {
                         // GAS requires text/plain for CORS simplicity often, but we handle standard requests
@@ -907,13 +1096,12 @@
                     fetchFromCloud(); // Initial Load
                 });
 
-                watch([itineraryData, shoppingList, groupExpenses, personalExpenses], () => {
+                watch([itineraryData, shoppingList, expenseList], () => {
                     // Local Persist
                     try {
                         localStorage.setItem('itineraryData_v4', JSON.stringify(itineraryData.value));
                         localStorage.setItem('shoppingList_v4', JSON.stringify(shoppingList.value));
-                        localStorage.setItem('groupExpenses_v4', JSON.stringify(groupExpenses.value));
-                        localStorage.setItem('personalExpenses_v4', JSON.stringify(personalExpenses.value));
+                        localStorage.setItem('expenseList_v1', JSON.stringify(expenseList.value)); // Only tracking V1
                     } catch (e) {
                         console.error('LocalStorage Limit Exceeded!', e);
                         // Continue to Cloud Sync even if LocalStorage fails
@@ -929,8 +1117,7 @@
                     days, currentDayIndex, currentDayItinerary, categories, getCategoryStyle, exchangeRate, exchangeAmount, calculatedTWD, loadingRate, users, groupExpenses, personalExpenses,
                     itineraryData, itineraryForm, showAddItineraryModal, openAddItinerary, editItinerary, saveItinerary, deleteItinerary, editingTransTime, toggleTransEdit, getPrevLocationName,
                     shoppingList, currentShoppingUser, showAddShoppingModal, newShoppingItem, handleImageUpload, addShoppingItem, showEditShoppingModal, editingShoppingItem, saveShoppingEdit, deleteShoppingItem, openEditShopping, showBoughtModal, selectedShoppingItem, boughtForm, openBoughtModal, confirmBought,
-                    currentExpenseTab, currentExpenseUser, totalGroupExpense, getPersonalTotal, showAddExpenseModal, newExpense, addExpense, deleteGroupExpense, deletePersonalExpense, openGoogleMaps,
-                    getUserPrepaid, getSettlement,
+                    expenseList, showAddExpenseModal, newExpense, openAddExpense, addExpense: saveExpense, saveExpense, deleteExpense, toggleSplitUser, getUserNet, getPairBalance, getUserTransactions, openGoogleMaps,
                     syncStatus, syncToCloud, isProcessingImage // Exposed text
                 };
             }
