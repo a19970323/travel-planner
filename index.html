@@ -398,106 +398,174 @@
                 <div v-if="currentTab === 'expenses'" key="expenses" class="pb-20">
                     <h2 class="text-2xl font-bold text-deep-blue mb-4">花費紀錄</h2>
 
-                    <!-- User Blocks -->
-                    <div class="space-y-8">
-                        <div v-for="user in users" :key="user">
-                            <!-- Header Card -->
-                            <div @click="toggleExpandedUser(user)"
-                                class="glass-panel p-5 rounded-3xl relative overflow-hidden mb-4 cursor-pointer hover:shadow-md transition-all">
-                                <div
-                                    class="absolute -right-4 -top-4 w-24 h-24 bg-gray-100 rounded-full opacity-50 blur-2xl">
-                                </div>
-                                <div class="relative z-10">
-                                    <div class="flex justify-between items-center mb-2">
-                                        <h3 class="text-xl font-bold flex items-center">
-                                            <div
-                                                class="w-8 h-8 rounded-full bg-deep-blue text-white flex items-center justify-center mr-2 text-sm">
-                                                {{ user[0] }}</div>
-                                            {{ user }}
-                                        </h3>
-                                        <div class="text-xs text-gray-400 flex items-center">
-                                            總現金流 (Net)
-                                            <i
-                                                :class="['fas ml-2 transition-transform', expandedUser === user ? 'fa-chevron-up rotate-180' : 'fa-chevron-down']"></i>
-                                        </div>
-                                    </div>
+                    <div class="flex space-x-2 mb-4">
+                        <button @click="currentExpenseTab = 'group'"
+                            :class="['flex-1 py-2 rounded-xl font-bold transition-all', currentExpenseTab === 'group' ? 'bg-deep-blue text-white shadow-lg' : 'bg-white text-gray-400']">
+                            團體公費
+                        </button>
+                        <button @click="currentExpenseTab = 'personal'"
+                            :class="['flex-1 py-2 rounded-xl font-bold transition-all', currentExpenseTab === 'personal' ? 'bg-deep-blue text-white shadow-lg' : 'bg-white text-gray-400']">
+                            個人花費
+                        </button>
+                    </div>
 
-                                    <!-- Total Stats -->
+                    <!-- Group Expenses Content -->
+                    <div v-if="currentExpenseTab === 'group'" class="space-y-8 animate-fade">
+                        <!-- User Blocks -->
+                        <div class="space-y-8">
+                            <div v-for="user in users" :key="user">
+                                <!-- Header Card -->
+                                <div @click="toggleExpandedUser(user)"
+                                    class="glass-panel p-5 rounded-3xl relative overflow-hidden mb-4 cursor-pointer hover:shadow-md transition-all">
                                     <div
-                                        :class="['text-3xl font-bold mb-4', getUserNet(user) >= 0 ? 'text-green-600' : 'text-red-500']">
-                                        {{ getUserNet(user) >= 0 ? '+' : '' }}NT$ {{
-                                        Math.abs(getUserNet(user)).toLocaleString() }}
+                                        class="absolute -right-4 -top-4 w-24 h-24 bg-gray-100 rounded-full opacity-50 blur-2xl">
                                     </div>
+                                    <div class="relative z-10">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <h3 class="text-xl font-bold flex items-center">
+                                                <div
+                                                    class="w-8 h-8 rounded-full bg-deep-blue text-white flex items-center justify-center mr-2 text-sm">
+                                                    {{ user[0] }}</div>
+                                                {{ user }}
+                                            </h3>
+                                            <div class="text-xs text-gray-400 flex items-center">
+                                                總現金流 (Net)
+                                                <i
+                                                    :class="['fas ml-2 transition-transform', expandedUser === user ? 'fa-chevron-up rotate-180' : 'fa-chevron-down']"></i>
+                                            </div>
+                                        </div>
 
-                                    <!-- Settlement Detail -->
-                                    <div class="text-sm space-y-1 border-t border-gray-100 pt-3">
-                                        <div v-for="other in users.filter(u => u !== user)" :key="other"
-                                            class="flex justify-between items-center">
-                                            <span class="text-gray-500">vs {{ other }}</span>
-                                            <span
-                                                :class="['font-bold', getPairBalance(user, other) >= 0 ? 'text-green-600' : 'text-red-500']">
-                                                {{ getPairBalance(user, other) >= 0 ? '應收' : '應付' }} NT$ {{
-                                                Math.abs(getPairBalance(user, other)).toLocaleString() }}
-                                            </span>
+                                        <!-- Total Stats -->
+                                        <div
+                                            :class="['text-3xl font-bold mb-4', getUserNet(user) >= 0 ? 'text-green-600' : 'text-red-500']">
+                                            {{ getUserNet(user) >= 0 ? '+' : '' }}NT$ {{
+                                            Math.abs(getUserNet(user)).toLocaleString() }}
+                                        </div>
+
+                                        <!-- Settlement Detail -->
+                                        <div class="text-sm space-y-1 border-t border-gray-100 pt-3">
+                                            <div v-for="other in users.filter(u => u !== user)" :key="other"
+                                                class="flex justify-between items-center">
+                                                <span class="text-gray-500">vs {{ other }}</span>
+                                                <span
+                                                    :class="['font-bold', getPairBalance(user, other) >= 0 ? 'text-green-600' : 'text-red-500']">
+                                                    {{ getPairBalance(user, other) >= 0 ? '應收' : '應付' }} NT$ {{
+                                                    Math.abs(getPairBalance(user, other)).toLocaleString() }}
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <!-- Transaction List (Collapsible) -->
-                            <transition name="fade">
-                                <div v-if="expandedUser === user" class="space-y-3 pl-2">
-                                    <div v-for="item in getUserTransactions(user)" :key="item.id"
-                                        @click="editExpense(item)" :class="['p-4 rounded-xl flex justify-between items-center transition-all cursor-pointer border-l-4 shadow-sm bg-white', 
+                                <!-- Transaction List (Collapsible) -->
+                                <transition name="fade">
+                                    <div v-if="expandedUser === user" class="space-y-3 pl-2">
+                                        <div v-for="item in getUserTransactions(user)" :key="item.id"
+                                            @click="editExpense(item)" :class="['p-4 rounded-xl flex justify-between items-center transition-all cursor-pointer border-l-4 shadow-sm bg-white', 
                                         item.isPayer ? 'border-red-400' : 'border-green-400']">
 
-                                        <!-- Left: Info -->
-                                        <div class="flex items-center space-x-3">
-                                            <div
-                                                :class="['w-10 h-10 rounded-full flex items-center justify-center text-lg', getCategoryStyle(item.category)?.bg, getCategoryStyle(item.category)?.color]">
-                                                <i :class="getCategoryStyle(item.category)?.icon"></i>
+                                            <!-- Left: Info -->
+                                            <div class="flex items-center space-x-3">
+                                                <div
+                                                    :class="['w-10 h-10 rounded-full flex items-center justify-center text-lg', getCategoryStyle(item.category)?.bg, getCategoryStyle(item.category)?.color]">
+                                                    <i :class="getCategoryStyle(item.category)?.icon"></i>
+                                                </div>
+                                                <div>
+                                                    <div class="font-bold text-gray-800">{{ item.name }}</div>
+                                                    <div class="text-xs text-gray-400">
+                                                        {{ item.date.slice(5) }} {{ item.time }}
+                                                        <span
+                                                            v-if="item.splitters.length < 3 && !item.splitters.includes(user)"
+                                                            class="bg-gray-100 px-1 rounded ml-1">
+                                                            幫 {{ item.splitters.join(',') }} 付
+                                                        </span>
+                                                        <span v-if="!item.isPayer"
+                                                            class="bg-gray-100 px-1 rounded ml-1">
+                                                            付給 {{ item.payer }}
+                                                        </span>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <div class="font-bold text-gray-800">{{ item.name }}</div>
-                                                <div class="text-xs text-gray-400">
-                                                    {{ item.date.slice(5) }} {{ item.time }}
-                                                    <span
-                                                        v-if="item.splitters.length < 3 && !item.splitters.includes(user)"
-                                                        class="bg-gray-100 px-1 rounded ml-1">
-                                                        幫 {{ item.splitters.join(',') }} 付
-                                                    </span>
-                                                    <span v-if="!item.isPayer" class="bg-gray-100 px-1 rounded ml-1">
-                                                        付給 {{ item.payer }}
-                                                    </span>
+
+                                            <!-- Right: Amount -->
+                                            <div class="text-right">
+                                                <div
+                                                    :class="['font-bold text-lg', item.isPayer ? 'text-red-500' : 'text-green-600']">
+                                                    {{ item.isPayer ? '-' : '' }}NT$ {{
+                                                    Math.abs(item.userAmount).toLocaleString() }}
+                                                </div>
+                                                <div class="text-[10px] text-gray-300">
+                                                    {{ item.isPayer ? '支出' : '分攤' }}
                                                 </div>
                                             </div>
                                         </div>
+                                    </div>
+                                </transition>
+                            </div>
+                        </div>
 
-                                        <!-- Right: Amount -->
-                                        <div class="text-right">
-                                            <div
-                                                :class="['font-bold text-lg', item.isPayer ? 'text-red-500' : 'text-green-600']">
-                                                {{ item.isPayer ? '-' : '' }}NT$ {{
-                                                Math.abs(item.userAmount).toLocaleString() }}
+                        <!-- Personal Expenses Content -->
+                        <div v-if="currentExpenseTab === 'personal'" class="space-y-8 animate-fade">
+                            <div v-for="user in users" :key="user">
+                                <div @click="toggleExpandedUser(user)"
+                                    class="glass-panel p-5 rounded-3xl relative overflow-hidden mb-4 cursor-pointer hover:shadow-md transition-all">
+                                    <div
+                                        class="absolute -right-4 -top-4 w-24 h-24 bg-gray-100 rounded-full opacity-50 blur-2xl">
+                                    </div>
+                                    <div class="relative z-10">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <h3 class="text-xl font-bold flex items-center">
+                                                <div
+                                                    class="w-8 h-8 rounded-full bg-deep-blue text-white flex items-center justify-center mr-2 text-sm">
+                                                    {{ user[0] }}</div>
+                                                {{ user }}
+                                            </h3>
+                                            <div class="text-xs text-gray-400 flex items-center">
+                                                個人總花費
+                                                <i
+                                                    :class="['fas ml-2 transition-transform', expandedUser === user ? 'fa-chevron-up rotate-180' : 'fa-chevron-down']"></i>
                                             </div>
-                                            <div class="text-[10px] text-gray-300">
-                                                {{ item.isPayer ? '支出' : '分攤' }}
-                                            </div>
+                                        </div>
+
+                                        <div class="text-3xl font-bold mb-1 text-deep-blue">
+                                            NT$ {{ getPersonalTotal(user).toLocaleString() }}
                                         </div>
                                     </div>
                                 </div>
-                            </transition>
-                        </div>
-                    </div>
 
-                    <!-- Add Button (Sticky for Tablet Fix) -->
-                    <button @click="openAddExpense"
-                        class="fixed bottom-6 right-6 w-14 h-14 bg-deep-blue text-white rounded-full shadow-2xl flex items-center justify-center text-2xl z-[9999] hover:scale-110 transition-transform cursor-pointer block">
-                        <i class="fas fa-plus"></i>
-                    </button>
-                    <!-- Extra spacer for scrolling -->
-                    <div class="h-24"></div>
-                </div>
+                                <transition name="fade">
+                                    <div v-if="expandedUser === user" class="space-y-3 pl-2">
+                                        <div v-for="item in getPersonalExpenses(user)" :key="item.id"
+                                            @click="editPersonalExpense(item, user)"
+                                            class="p-4 rounded-xl flex justify-between items-center transition-all cursor-pointer border-l-4 shadow-sm bg-white border-blue-400">
+                                            <div class="flex items-center space-x-3">
+                                                <div
+                                                    :class="['w-10 h-10 rounded-full flex items-center justify-center text-lg', getCategoryStyle(item.category)?.bg, getCategoryStyle(item.category)?.color]">
+                                                    <i :class="getCategoryStyle(item.category)?.icon"></i>
+                                                </div>
+                                                <div>
+                                                    <div class="font-bold text-gray-800">{{ item.name }}</div>
+                                                    <div class="text-xs text-gray-400">{{ item.date.slice(5) }}</div>
+                                                </div>
+                                            </div>
+                                            <div class="text-right">
+                                                <div class="font-bold text-lg text-deep-blue">NT$ {{
+                                                    Number(item.amount).toLocaleString() }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </transition>
+                            </div>
+                        </div>
+
+                        <!-- Add Button (Sticky for Tablet Fix) -->
+                        <button @click="openAddExpense"
+                            class="fixed bottom-6 right-6 w-14 h-14 bg-deep-blue text-white rounded-full shadow-2xl flex items-center justify-center text-2xl z-[9999] hover:scale-110 transition-transform cursor-pointer block">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                        <!-- Extra spacer for scrolling -->
+                        <div class="h-24"></div>
+                    </div>
             </transition>
 
         </main>
@@ -605,7 +673,8 @@
             <div
                 class="bg-white w-full max-w-md rounded-t-3xl p-6 shadow-2xl animate-slide-up max-h-[90vh] overflow-y-auto">
                 <nav class="flex justify-between items-center mb-4">
-                    <h3 class="font-bold text-xl">{{ newExpense.id ? '編輯花費' : '新增花費' }}</h3>
+                    <h3 class="font-bold text-xl">{{ newExpense.id ? '編輯花費' : (newExpense.isPersonal ? '新增個人花費' :
+                        '新增公費') }}</h3>
                     <button v-if="newExpense.id" @click="deleteExpense"
                         class="text-red-400 text-sm border border-red-200 px-3 py-1 rounded-full">
                         <i class="fas fa-trash-alt mr-1"></i>刪除
@@ -633,9 +702,10 @@
                     <input type="number" v-model="newExpense.amount" placeholder="金額 (NT$)"
                         class="w-full p-3 bg-gray-50 rounded-xl text-lg font-bold">
 
-                    <!-- Payer -->
-                    <div>
-                        <label class="block text-xs text-gray-400 mb-1 ml-1">誰先付錢？</label>
+                    <!-- Payer (Group Only or Personal Select) -->
+                    <div v-if="!newExpense.isPersonal || !newExpense.id">
+                        <label class="block text-xs text-gray-400 mb-1 ml-1">{{ newExpense.isPersonal ? '紀錄是誰的花費？' :
+                            '誰先付錢？' }}</label>
                         <div class="flex space-x-2">
                             <button v-for="user in users" :key="user" @click="newExpense.payer = user"
                                 :class="['flex-1 py-2 rounded-xl text-sm font-bold border-2 transition-all', newExpense.payer === user ? 'border-deep-blue bg-blue-50 text-deep-blue' : 'border-gray-100 text-gray-400']">
@@ -644,8 +714,8 @@
                         </div>
                     </div>
 
-                    <!-- Split -->
-                    <div>
+                    <!-- Split (Group Only) -->
+                    <div v-if="!newExpense.isPersonal">
                         <label class="block text-xs text-gray-400 mb-1 ml-1">分給誰？(默認平分)</label>
                         <div class="flex space-x-2">
                             <button v-for="user in users" :key="user" @click="toggleSplitUser(user)"
@@ -721,6 +791,7 @@
                 };
 
                 const currentTab = ref('itinerary');
+                const currentExpenseTab = ref('group'); // New: group | personal
                 const exchangeRate = ref(0.215);
                 const exchangeAmount = ref('');
                 const loadingRate = ref(false);
@@ -795,6 +866,7 @@
                 const shoppingList = ref(safeParse('shoppingList_v4', { '周瑾': [], '玉華': [], '佳蓉': [] }));
                 // New Expense Structure: Array of { id, date, time, category, name, amount, payer, splitters: [], note }
                 const expenseList = ref(safeParse('expenseList_v1', []));
+                const personalExpenseList = ref(safeParse('personalExpenseList_v1', [])); // New separate list
                 const expandedUser = ref(null); // Accordion state
 
                 const currentShoppingUser = ref(null);
@@ -813,7 +885,8 @@
                 const editingShoppingItem = ref(null);
                 const editingShoppingIndex = ref(-1);
                 const boughtForm = ref({ isBought: false, price: '' });
-                const newExpense = ref({ name: '', amount: '', payer: '周瑾' });
+
+                const newExpense = ref({ name: '', amount: '', payer: '周瑾', isPersonal: false });
                 const selectedShoppingItem = ref(null);
                 const selectedShoppingIndex = ref(-1);
 
@@ -882,8 +955,17 @@
                     item.bought = boughtForm.value.isBought;
                     if (item.bought && boughtForm.value.price) {
                         item.boughPrice = boughtForm.value.price;
-                        personalExpenses.value[user].push({ name: item.name, amount: boughtForm.value.price, date: new Date().toISOString().split('T')[0] });
-                        alert(`已記帳 NT$${boughtForm.value.price}`);
+                        // Push to Personal Expense List
+                        personalExpenseList.value.push({
+                            id: Date.now(),
+                            date: new Date().toISOString().split('T')[0],
+                            category: 'shopping',
+                            name: item.name,
+                            amount: boughtForm.value.price,
+                            user: user, // Key for personal list
+                            note: '來自購物清單'
+                        });
+                        alert(`已記帳 NT$${boughtForm.value.price} 到 ${user} 的個人花費`);
                     } else if (!item.bought) {
                         item.boughPrice = null; // Clear price if unchecked
                     }
@@ -891,28 +973,35 @@
                 };
 
 
-                // EXPENSE LOGIC (New V1)
+                // EXPENSE LOGIC
                 const openAddExpense = () => {
                     const now = new Date();
-                    const dateStr = now.toISOString().split('T')[0];
-                    const timeStr = now.toTimeString().slice(0, 5);
+                    const isPersonal = currentExpenseTab.value === 'personal';
                     newExpense.value = {
                         id: null,
-                        date: dateStr,
-                        time: timeStr,
+                        date: now.toISOString().split('T')[0],
+                        time: now.toTimeString().slice(0, 5),
                         category: 'food',
                         name: '',
                         amount: '',
-                        payer: users[0],
+                        payer: users[0], // In Personal mode, this acts as the "Owner" of the expense
                         splitters: [...users],
-                        note: ''
+                        note: '',
+                        isPersonal: isPersonal
                     };
                     showAddExpenseModal.value = true;
                 };
 
                 const editExpense = (item) => {
-                    // Clone to avoid direct mutation issues
                     newExpense.value = JSON.parse(JSON.stringify(item));
+                    newExpense.value.isPersonal = false; // It's from group list
+                    showAddExpenseModal.value = true;
+                };
+
+                const editPersonalExpense = (item, user) => {
+                    newExpense.value = JSON.parse(JSON.stringify(item));
+                    newExpense.value.isPersonal = true;
+                    newExpense.value.payer = user; // Ensure correct user selected
                     showAddExpenseModal.value = true;
                 };
 
@@ -923,31 +1012,37 @@
                 };
 
                 const saveExpense = () => {
-                    if (!newExpense.value.name || !newExpense.value.amount || newExpense.value.splitters.length === 0) return;
+                    if (!newExpense.value.name || !newExpense.value.amount) return;
 
-                    if (newExpense.value.id) {
-                        // Edit
-                        const index = expenseList.value.findIndex(e => e.id === newExpense.value.id);
-                        if (index !== -1) expenseList.value[index] = { ...newExpense.value };
+                    const targetList = newExpense.value.isPersonal ? personalExpenseList.value : expenseList.value;
+                    const expenseData = { ...newExpense.value };
+
+                    // Format adjustments
+                    if (newExpense.value.isPersonal) {
+                        expenseData.user = newExpense.value.payer; // Map payer to user for personal
+                        delete expenseData.splitters; // Cleanup
                     } else {
-                        // New
-                        expenseList.value.push({ ...newExpense.value, id: Date.now() });
+                        if (newExpense.value.splitters.length === 0) return;
                     }
 
-                    // Sort by Date/Time
-                    expenseList.value.sort((a, b) => {
-                        const dtA = a.date + a.time;
-                        const dtB = b.date + b.time;
-                        return dtB.localeCompare(dtA); // Newest first
-                    });
+                    if (newExpense.value.id) {
+                        const index = targetList.findIndex(e => e.id === newExpense.value.id);
+                        if (index !== -1) targetList[index] = expenseData;
+                    } else {
+                        targetList.push({ ...expenseData, id: Date.now() });
+                    }
+
+                    // Sort
+                    targetList.sort((a, b) => (b.date + (b.time || '')).localeCompare(a.date + (a.time || '')));
 
                     showAddExpenseModal.value = false;
                 };
 
                 const deleteExpense = () => {
                     if (confirm('確定刪除此筆花費？')) {
-                        const index = expenseList.value.findIndex(e => e.id === newExpense.value.id);
-                        if (index !== -1) expenseList.value.splice(index, 1);
+                        const targetList = newExpense.value.isPersonal ? personalExpenseList.value : expenseList.value;
+                        const index = targetList.findIndex(e => e.id === newExpense.value.id);
+                        if (index !== -1) targetList.splice(index, 1);
                         showAddExpenseModal.value = false;
                     }
                 };
@@ -1048,6 +1143,17 @@
                     });
                 };
 
+                const getPersonalTotal = (user) => {
+                    return personalExpenseList.value
+                        .filter(e => e.user === user)
+                        .reduce((sum, e) => sum + Number(e.amount), 0);
+                };
+
+                const getPersonalExpenses = (user) => {
+                    return personalExpenseList.value.filter(e => e.user === user).sort((a, b) => b.id - a.id);
+                };
+
+
                 const openGoogleMaps = (name) => { window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`, '_blank'); };
 
                 // AUTO SYNC LOGIC
@@ -1058,7 +1164,8 @@
                         const data = await res.json();
                         if (data.itineraryData_v4) itineraryData.value = data.itineraryData_v4;
                         if (data.shoppingList_v4) shoppingList.value = data.shoppingList_v4;
-                        if (data.expenseList_v1) expenseList.value = data.expenseList_v1; // Load V1
+                        if (data.expenseList_v1) expenseList.value = data.expenseList_v1;
+                        if (data.personalExpenseList_v1) personalExpenseList.value = data.personalExpenseList_v1; // Load Personal
 
                         // Initial sort for all days
                         for (let i = 0; i < days.length; i++) {
@@ -1080,7 +1187,8 @@
                     const payload = {
                         itineraryData_v4: itineraryData.value,
                         shoppingList_v4: shoppingList.value,
-                        expenseList_v1: expenseList.value // New V1 for Expenses
+                        expenseList_v1: expenseList.value,
+                        personalExpenseList_v1: personalExpenseList.value // Sync Personal
                     };
                     try {
                         // GAS requires text/plain for CORS simplicity often, but we handle standard requests
@@ -1110,7 +1218,8 @@
                     try {
                         localStorage.setItem('itineraryData_v4', JSON.stringify(itineraryData.value));
                         localStorage.setItem('shoppingList_v4', JSON.stringify(shoppingList.value));
-                        localStorage.setItem('expenseList_v1', JSON.stringify(expenseList.value)); // Only tracking V1
+                        localStorage.setItem('expenseList_v1', JSON.stringify(expenseList.value));
+                        localStorage.setItem('personalExpenseList_v1', JSON.stringify(personalExpenseList.value));
                     } catch (e) {
                         console.error('LocalStorage Limit Exceeded!', e);
                         // Continue to Cloud Sync even if LocalStorage fails
@@ -1119,14 +1228,15 @@
                     // Cloud Sync
                     syncStatus.value = 'syncing'; // Immediate feedback
                     debouncedSync();
+                    debouncedSync();
                 }, { deep: true });
 
                 return {
-                    currentTab, tabs: [{ id: 'itinerary', icon: 'fas fa-map-marked-alt' }, { id: 'info', icon: 'fas fa-info' }, { id: 'shopping', icon: 'fas fa-shopping-basket' }, { id: 'expenses', icon: 'fas fa-yen-sign' }],
+                    currentTab, currentExpenseTab, tabs: [{ id: 'itinerary', icon: 'fas fa-map-marked-alt' }, { id: 'info', icon: 'fas fa-info' }, { id: 'shopping', icon: 'fas fa-shopping-basket' }, { id: 'expenses', icon: 'fas fa-yen-sign' }],
                     days, currentDayIndex, currentDayItinerary, categories, getCategoryStyle, exchangeRate, exchangeAmount, calculatedTWD, loadingRate, users,
                     itineraryData, itineraryForm, showAddItineraryModal, openAddItinerary, editItinerary, saveItinerary, deleteItinerary, editingTransTime, toggleTransEdit, getPrevLocationName,
                     shoppingList, currentShoppingUser, showAddShoppingModal, newShoppingItem, handleImageUpload, addShoppingItem, showEditShoppingModal, editingShoppingItem, saveShoppingEdit, deleteShoppingItem, openEditShopping, showBoughtModal, selectedShoppingItem, boughtForm, openBoughtModal, confirmBought,
-                    expenseList, showAddExpenseModal, newExpense, openAddExpense, addExpense: saveExpense, saveExpense, deleteExpense, toggleSplitUser, getUserNet, getPairBalance, getUserTransactions, openGoogleMaps,
+                    expenseList, personalExpenseList, showAddExpenseModal, newExpense, openAddExpense, editExpense, editPersonalExpense, addExpense: saveExpense, saveExpense, deleteExpense, toggleSplitUser, getUserNet, getPairBalance, getUserTransactions, getPersonalTotal, getPersonalExpenses, openGoogleMaps,
                     syncStatus, syncToCloud, isProcessingImage, // Exposed text
                     expandedUser, toggleExpandedUser: (user) => expandedUser.value = expandedUser.value === user ? null : user // Accordion toggle
                 };
