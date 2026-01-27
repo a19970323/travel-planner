@@ -300,6 +300,7 @@
                                 <div class="text-center">
                                     <div class="text-2xl font-bold text-deep-blue">06:40</div>
                                     <div class="text-xs text-gray-400">TPE</div>
+                                    <div class="text-[10px] text-gray-400">第一航廈</div>
                                 </div>
                                 <div class="flex flex-col items-center px-4"><span
                                         class="text-xs text-blue-500 font-mono">TR898</span><i
@@ -307,6 +308,7 @@
                                 <div class="text-center">
                                     <div class="text-2xl font-bold text-deep-blue">10:45</div>
                                     <div class="text-xs text-gray-400">NRT</div>
+                                    <div class="text-[10px] text-gray-400">第一航廈</div>
                                 </div>
                             </div>
                         </div>
@@ -316,6 +318,7 @@
                                 <div class="text-center">
                                     <div class="text-2xl font-bold text-deep-blue">11:45</div>
                                     <div class="text-xs text-gray-400">NRT</div>
+                                    <div class="text-[10px] text-gray-400">第一航廈</div>
                                 </div>
                                 <div class="flex flex-col items-center px-4"><span
                                         class="text-xs text-blue-500 font-mono">TR899</span><i
@@ -323,6 +326,7 @@
                                 <div class="text-center">
                                     <div class="text-2xl font-bold text-deep-blue">15:10</div>
                                     <div class="text-xs text-gray-400">TPE</div>
+                                    <div class="text-[10px] text-gray-400">第一航廈</div>
                                 </div>
                             </div>
                         </div>
@@ -943,7 +947,13 @@
                 const addShoppingItem = () => {
                     if (isProcessingImage.value) return; // Prevent add while processing
                     if (!newShoppingItem.value.name) return;
-                    shoppingList.value[currentShoppingUser.value].push({ name: newShoppingItem.value.name, price: newShoppingItem.value.price, image: newShoppingItem.value.image, bought: false });
+                    shoppingList.value[currentShoppingUser.value].push({
+                        id: Date.now(),
+                        name: newShoppingItem.value.name,
+                        price: newShoppingItem.value.price,
+                        image: newShoppingItem.value.image,
+                        bought: false
+                    });
                     showAddShoppingModal.value = false;
                     newShoppingItem.value = { name: '', price: '', image: null };
                 };
@@ -954,22 +964,56 @@
                 const confirmBought = () => {
                     const user = currentShoppingUser.value;
                     const item = shoppingList.value[user][selectedShoppingIndex.value];
+                    const wasBought = item.bought;
                     item.bought = boughtForm.value.isBought;
-                    if (item.bought && boughtForm.value.price) {
+
+                    if (item.bought && !wasBought && boughtForm.value.price) {
                         item.boughPrice = boughtForm.value.price;
+                        const expenseId = Date.now();
+                        item.expenseId = expenseId;
+
                         // Push to Personal Expense List
                         personalExpenseList.value.push({
-                            id: Date.now(),
+                            id: expenseId,
                             date: new Date().toISOString().split('T')[0],
                             category: 'shopping',
                             name: item.name,
                             amount: boughtForm.value.price,
                             user: user, // Key for personal list
-                            note: '來自購物清單'
+                            note: '來自購物清單',
+                            shoppingItemId: item.id
                         });
                         alert(`已記帳 NT$${boughtForm.value.price} 到 ${user} 的個人花費`);
-                    } else if (!item.bought) {
+
+                    } else if (!item.bought && wasBought) {
                         item.boughPrice = null; // Clear price if unchecked
+
+                        // Try to find linked expense
+                        let expIndex = -1;
+                        if (item.expenseId) {
+                            expIndex = personalExpenseList.value.findIndex(e => e.id === item.expenseId);
+                        }
+
+                        // Fallback Heuristic
+                        if (expIndex === -1) {
+                            expIndex = personalExpenseList.value.findIndex(e =>
+                                e.user === user &&
+                                e.category === 'shopping' &&
+                                e.name === item.name
+                            );
+                        }
+
+                        if (expIndex !== -1) {
+                            personalExpenseList.value.splice(expIndex, 1);
+                        }
+
+                        item.expenseId = null;
+                    } else if (item.bought && wasBought && boughtForm.value.price) {
+                        if (item.boughPrice !== boughtForm.value.price) {
+                            item.boughPrice = boughtForm.value.price;
+                            const exp = personalExpenseList.value.find(e => e.id === item.expenseId);
+                            if (exp) exp.amount = boughtForm.value.price;
+                        }
                     }
                     showBoughtModal.value = false;
                 };
@@ -1044,7 +1088,30 @@
                     if (confirm('確定刪除此筆花費？')) {
                         const targetList = newExpense.value.isPersonal ? personalExpenseList.value : expenseList.value;
                         const index = targetList.findIndex(e => e.id === newExpense.value.id);
-                        if (index !== -1) targetList.splice(index, 1);
+
+                        if (index !== -1) {
+                            const deletedExp = targetList[index];
+                            targetList.splice(index, 1);
+
+                            if (newExpense.value.isPersonal && deletedExp.user) {
+                                const userList = shoppingList.value[deletedExp.user];
+                                if (userList) {
+                                    let shopItem = null;
+                                    if (deletedExp.shoppingItemId) {
+                                        shopItem = userList.find(i => i.id === deletedExp.shoppingItemId);
+                                    }
+                                    if (!shopItem) {
+                                        shopItem = userList.find(i => i.bought && i.name === deletedExp.name);
+                                    }
+
+                                    if (shopItem) {
+                                        shopItem.bought = false;
+                                        shopItem.boughPrice = null;
+                                        shopItem.expenseId = null;
+                                    }
+                                }
+                            }
+                        }
                         showAddExpenseModal.value = false;
                     }
                 };
@@ -1159,6 +1226,14 @@
                 const openGoogleMaps = (name) => { window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`, '_blank'); };
 
                 // AUTO SYNC LOGIC
+                const ensureShoppingIds = () => {
+                    for (const user in shoppingList.value) {
+                        shoppingList.value[user].forEach((item, idx) => {
+                            if (!item.id) item.id = Date.now() + '-' + idx + '-' + Math.floor(Math.random() * 1000);
+                        });
+                    }
+                };
+
                 const fetchFromCloud = async () => {
                     syncStatus.value = 'syncing';
                     try {
@@ -1168,6 +1243,8 @@
                         if (data.shoppingList_v4) shoppingList.value = data.shoppingList_v4;
                         if (data.expenseList_v1) expenseList.value = data.expenseList_v1;
                         if (data.personalExpenseList_v1) personalExpenseList.value = data.personalExpenseList_v1; // Load Personal
+
+                        ensureShoppingIds();
 
                         // Initial sort for all days
                         for (let i = 0; i < days.length; i++) {
@@ -1211,6 +1288,7 @@
                 const debouncedSync = debounce(syncToCloud, 2000); // Wait 2s after changes
 
                 onMounted(() => {
+                    ensureShoppingIds();
                     fetchExchangeRate();
                     fetchFromCloud(); // Initial Load
                 });
