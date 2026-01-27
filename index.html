@@ -1226,6 +1226,9 @@
                 const openGoogleMaps = (name) => { window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`, '_blank'); };
 
                 // AUTO SYNC LOGIC
+                const lastModified = ref(safeParse('lastModified_v1', 0));
+                let isApplyingCloudData = false;
+
                 const ensureShoppingIds = () => {
                     for (const user in shoppingList.value) {
                         shoppingList.value[user].forEach((item, idx) => {
@@ -1239,10 +1242,26 @@
                     try {
                         const res = await fetch(GAS_URL + '?action=read', { method: 'GET', redirect: 'follow' });
                         const data = await res.json();
+
+                        const cloudTime = data.lastModified || 0;
+                        const localTime = lastModified.value;
+
+                        // Conflict Resolution: Trust Local if Local is Newer
+                        if (localTime > cloudTime) {
+                            console.log(`Local (${localTime}) is newer than Cloud (${cloudTime}). Skipping overwrite.`);
+                            syncStatus.value = 'success';
+                            // Might want to push local to cloud immediately?
+                            debouncedSync();
+                            return;
+                        }
+
+                        isApplyingCloudData = true;
+
                         if (data.itineraryData_v4) itineraryData.value = data.itineraryData_v4;
                         if (data.shoppingList_v4) shoppingList.value = data.shoppingList_v4;
                         if (data.expenseList_v1) expenseList.value = data.expenseList_v1;
-                        if (data.personalExpenseList_v1) personalExpenseList.value = data.personalExpenseList_v1; // Load Personal
+                        if (data.personalExpenseList_v1) personalExpenseList.value = data.personalExpenseList_v1;
+                        if (data.lastModified) lastModified.value = data.lastModified;
 
                         ensureShoppingIds();
 
@@ -1255,9 +1274,14 @@
 
                         syncStatus.value = 'success';
                         console.log('Loaded from cloud');
+
+                        // Release flag after reactivity settles
+                        setTimeout(() => { isApplyingCloudData = false; }, 100);
+
                     } catch (e) {
                         console.error('Cloud load fail', e);
                         syncStatus.value = 'error';
+                        isApplyingCloudData = false;
                     }
                 };
 
@@ -1267,7 +1291,8 @@
                         itineraryData_v4: itineraryData.value,
                         shoppingList_v4: shoppingList.value,
                         expenseList_v1: expenseList.value,
-                        personalExpenseList_v1: personalExpenseList.value // Sync Personal
+                        personalExpenseList_v1: personalExpenseList.value,
+                        lastModified: lastModified.value
                     };
                     try {
                         // GAS requires text/plain for CORS simplicity often, but we handle standard requests
@@ -1285,7 +1310,7 @@
                     }
                 };
 
-                const debouncedSync = debounce(syncToCloud, 2000); // Wait 2s after changes
+                const debouncedSync = debounce(syncToCloud, 500); // Wait 2s after changes
 
                 onMounted(() => {
                     ensureShoppingIds();
@@ -1293,13 +1318,18 @@
                     fetchFromCloud(); // Initial Load
                 });
 
-                watch([itineraryData, shoppingList, expenseList], () => {
+                watch([itineraryData, shoppingList, expenseList, personalExpenseList], () => {
+                    if (!isApplyingCloudData) {
+                        lastModified.value = Date.now();
+                    }
+
                     // Local Persist
                     try {
                         localStorage.setItem('itineraryData_v4', JSON.stringify(itineraryData.value));
                         localStorage.setItem('shoppingList_v4', JSON.stringify(shoppingList.value));
                         localStorage.setItem('expenseList_v1', JSON.stringify(expenseList.value));
                         localStorage.setItem('personalExpenseList_v1', JSON.stringify(personalExpenseList.value));
+                        localStorage.setItem('lastModified_v1', lastModified.value);
                     } catch (e) {
                         console.error('LocalStorage Limit Exceeded!', e);
                         // Continue to Cloud Sync even if LocalStorage fails
@@ -1307,7 +1337,6 @@
 
                     // Cloud Sync
                     syncStatus.value = 'syncing'; // Immediate feedback
-                    debouncedSync();
                     debouncedSync();
                 }, { deep: true });
 
