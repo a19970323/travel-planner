@@ -1312,13 +1312,19 @@
 
                 const debouncedSync = debounce(syncToCloud, 500); // Wait 2s after changes
 
-                onMounted(() => {
+                const isReady = ref(false); // Protection Lock
+
+                onMounted(async () => {
                     ensureShoppingIds();
                     fetchExchangeRate();
-                    fetchFromCloud(); // Initial Load
+                    await fetchFromCloud(); // Initial Load
+                    isReady.value = true; // Unlock watch after initial sync check
                 });
 
                 watch([itineraryData, shoppingList, expenseList, personalExpenseList], () => {
+                    // Block execution if app is not fully loaded (prevent overwriting cloud data on init)
+                    if (!isReady.value) return;
+
                     if (!isApplyingCloudData) {
                         lastModified.value = Date.now();
                     }
