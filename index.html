@@ -425,25 +425,35 @@
                                         class="absolute -right-4 -top-4 w-24 h-24 bg-gray-100 rounded-full opacity-50 blur-2xl">
                                     </div>
                                     <div class="relative z-10">
-                                        <div class="flex justify-between items-center mb-2">
+                                        <div class="flex justify-between items-start mb-4">
                                             <h3 class="text-xl font-bold flex items-center">
                                                 <div
                                                     class="w-8 h-8 rounded-full bg-deep-blue text-white flex items-center justify-center mr-2 text-sm">
                                                     {{ user[0] }}</div>
                                                 {{ user }}
                                             </h3>
-                                            <div class="text-xs text-gray-400 flex items-center">
-                                                總現金流 (Net)
+                                            <div class="text-gray-400 pt-1">
                                                 <i
-                                                    :class="['fas ml-2 transition-transform', expandedUser === user ? 'fa-chevron-up rotate-180' : 'fa-chevron-down']"></i>
+                                                    :class="['fas transition-transform', expandedUser === user ? 'fa-chevron-up rotate-180' : 'fa-chevron-down']"></i>
                                             </div>
                                         </div>
 
-                                        <!-- Total Stats -->
-                                        <div
-                                            :class="['text-3xl font-bold mb-4', getUserNet(user) >= 0 ? 'text-green-600' : 'text-red-500']">
-                                            {{ getUserNet(user) >= 0 ? '+' : '' }}NT$ {{
-                                            Math.abs(getUserNet(user)).toLocaleString() }}
+                                        <!-- Group Spend -->
+                                        <div class="mb-3">
+                                            <div class="text-xs text-gray-400 mb-0.5">個人公費支出</div>
+                                            <div class="text-xl font-bold text-gray-700">
+                                                NT$ {{ getUserTotalGroupSpend(user).toLocaleString() }}
+                                            </div>
+                                        </div>
+
+                                        <!-- Net Cash Flow -->
+                                        <div class="mb-4">
+                                            <div class="text-xs text-gray-400 mb-0.5">現金流 (Net)</div>
+                                            <div
+                                                :class="['text-3xl font-bold', getUserNet(user) >= 0 ? 'text-green-600' : 'text-red-500']">
+                                                {{ getUserNet(user) >= 0 ? '+' : '' }}NT$ {{
+                                                Math.abs(getUserNet(user)).toLocaleString() }}
+                                            </div>
                                         </div>
 
                                         <!-- Settlement Detail -->
@@ -1130,6 +1140,16 @@
                     return Math.round(net);
                 };
 
+                const getUserTotalGroupSpend = (user) => {
+                    let total = 0;
+                    expenseList.value.forEach(e => {
+                        if (e.splitters.includes(user)) {
+                            total += (Number(e.amount) / e.splitters.length);
+                        }
+                    });
+                    return Math.round(total);
+                };
+
                 const getPairBalance = (user, other) => {
                     let balance = 0; // + means Other owes User (User receives)
 
@@ -1351,7 +1371,7 @@
                     days, currentDayIndex, currentDayItinerary, categories, getCategoryStyle, exchangeRate, exchangeAmount, calculatedTWD, loadingRate, users,
                     itineraryData, itineraryForm, showAddItineraryModal, openAddItinerary, editItinerary, saveItinerary, deleteItinerary, editingTransTime, toggleTransEdit, getPrevLocationName,
                     shoppingList, currentShoppingUser, showAddShoppingModal, newShoppingItem, handleImageUpload, addShoppingItem, showEditShoppingModal, editingShoppingItem, saveShoppingEdit, deleteShoppingItem, openEditShopping, showBoughtModal, selectedShoppingItem, boughtForm, openBoughtModal, confirmBought,
-                    expenseList, personalExpenseList, showAddExpenseModal, newExpense, openAddExpense, editExpense, editPersonalExpense, addExpense: saveExpense, saveExpense, deleteExpense, toggleSplitUser, getUserNet, getPairBalance, getUserTransactions, getPersonalTotal, getPersonalExpenses, openGoogleMaps,
+                    expenseList, personalExpenseList, showAddExpenseModal, newExpense, openAddExpense, editExpense, editPersonalExpense, addExpense: saveExpense, saveExpense, deleteExpense, toggleSplitUser, getUserNet, getUserTotalGroupSpend, getPairBalance, getUserTransactions, getPersonalTotal, getPersonalExpenses, openGoogleMaps,
                     syncStatus, syncToCloud, isProcessingImage, // Exposed text
                     expandedUser, toggleExpandedUser: (user) => expandedUser.value = expandedUser.value === user ? null : user // Accordion toggle
                 };
