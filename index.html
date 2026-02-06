@@ -438,11 +438,16 @@
                                             </div>
                                         </div>
 
-                                        <!-- Group Spend -->
+                                        <!-- Group Spend + Personal Total Update (Point 1) -->
                                         <div class="mb-3">
-                                            <div class="text-xs text-gray-400 mb-0.5">個人公費支出</div>
-                                            <div class="text-xl font-bold text-gray-700">
-                                                NT$ {{ getUserTotalGroupSpend(user).toLocaleString() }}
+                                            <div class="text-xs text-gray-400 mb-0.5">個人總支出 (公費 + 私帳)</div>
+                                            <div class="text-xl font-bold text-gray-700 flex items-baseline gap-2">
+                                                <span>NT$ {{ (getUserTotalGroupSpend(user) +
+                                                    getPersonalTotal(user)).toLocaleString() }}</span>
+                                                <span class="text-xs text-gray-400 font-normal">
+                                                    (公費 {{ getUserTotalGroupSpend(user).toLocaleString() }} + 私帳 {{
+                                                    getPersonalTotal(user).toLocaleString() }})
+                                                </span>
                                             </div>
                                         </div>
 
@@ -471,45 +476,76 @@
                                     </div>
                                 </div>
 
-                                <!-- Transaction List (Collapsible) -->
+                                <!-- Transaction List (Collapsible & Categorized - Point 2) -->
                                 <transition name="fade">
-                                    <div v-if="expandedUser === user" class="space-y-3 pl-2">
-                                        <div v-for="item in getUserTransactions(user)" :key="item.id"
-                                            @click="editExpense(item)" :class="['p-4 rounded-xl flex justify-between items-center transition-all cursor-pointer border-l-4 shadow-sm bg-white', 
-                                        item.isPayer ? 'border-red-400' : 'border-green-400']">
+                                    <div v-if="expandedUser === user" class="space-y-4 pl-2 mb-6">
 
-                                            <!-- Left: Info -->
-                                            <div class="flex items-center space-x-3">
-                                                <div
-                                                    :class="['w-10 h-10 rounded-full flex items-center justify-center text-lg', getCategoryStyle(item.category)?.bg, getCategoryStyle(item.category)?.color]">
-                                                    <i :class="getCategoryStyle(item.category)?.icon"></i>
-                                                </div>
-                                                <div>
-                                                    <div class="font-bold text-gray-800">{{ item.name }}</div>
-                                                    <div class="text-xs text-gray-400">
-                                                        {{ item.date.slice(5) }} {{ item.time }}
-                                                        <span
-                                                            v-if="item.splitters.length < 3 && !item.splitters.includes(user)"
-                                                            class="bg-gray-100 px-1 rounded ml-1">
-                                                            幫 {{ item.splitters.join(',') }} 付
-                                                        </span>
-                                                        <span v-if="!item.isPayer"
-                                                            class="bg-gray-100 px-1 rounded ml-1">
-                                                            付給 {{ item.payer }}
-                                                        </span>
+                                        <!-- Iterate Categories -->
+                                        <div v-for="catGroup in getUserTransactionsGrouped(user)" :key="catGroup.id"
+                                            class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+
+                                            <!-- Category Header -->
+                                            <div @click="toggleExpCategory(user, catGroup.id)"
+                                                class="p-4 flex justify-between items-center cursor-pointer bg-gray-50/50 hover:bg-gray-50 transition-colors">
+                                                <div class="flex items-center gap-3">
+                                                    <div
+                                                        :class="['w-8 h-8 rounded-full flex items-center justify-center text-sm', catGroup.style.bg, catGroup.style.color]">
+                                                        <i :class="catGroup.style.icon"></i>
                                                     </div>
+                                                    <span class="font-bold text-gray-700">{{ catGroup.name }}</span>
+                                                </div>
+                                                <div class="flex items-center gap-3">
+                                                    <span class="font-bold text-gray-600">NT$ {{
+                                                        catGroup.totalShare.toLocaleString() }}</span>
+                                                    <i
+                                                        :class="['fas text-gray-300 transition-transform text-xs', expandedCategories[user + '-' + catGroup.id] ? 'fa-chevron-up' : 'fa-chevron-down']"></i>
                                                 </div>
                                             </div>
 
-                                            <!-- Right: Amount -->
-                                            <div class="text-right">
-                                                <div
-                                                    :class="['font-bold text-lg', item.isPayer ? 'text-red-500' : 'text-gray-800']">
-                                                    -NT$ {{
-                                                    Math.round(Math.abs(item.userAmount)).toLocaleString() }}
-                                                </div>
-                                                <div class="text-[10px] text-gray-300">
-                                                    {{ item.isPayer ? '支出' : '分攤' }}
+                                            <!-- Expense Items (Point 3) -->
+                                            <div v-if="expandedCategories[user + '-' + catGroup.id]"
+                                                class="border-t border-gray-100">
+                                                <div v-for="item in catGroup.items" :key="item.id"
+                                                    @click="editExpense(item)"
+                                                    class="p-4 border-b border-gray-50 last:border-0 hover:bg-gray-50 cursor-pointer transition-colors relative">
+
+                                                    <!-- Main Row -->
+                                                    <div class="flex justify-between items-start mb-1">
+                                                        <div class="font-bold text-gray-800 text-sm">{{ item.name }}
+                                                        </div>
+                                                        <div class="text-xs text-gray-400 font-mono">總額 $<span
+                                                                class="text-gray-600">{{
+                                                                Number(item.amount).toLocaleString() }}</span></div>
+                                                    </div>
+
+                                                    <div class="flex justify-between items-end">
+                                                        <div class="text-[10px] text-gray-400">
+                                                            {{ item.date.slice(5) }}
+                                                            <span v-if="item.isPayer"
+                                                                class="ml-1 bg-red-50 text-red-400 px-1 rounded">先墊付</span>
+                                                            <span v-else
+                                                                class="ml-1 bg-gray-100 text-gray-500 px-1 rounded">分攤者</span>
+                                                        </div>
+
+                                                        <!-- Dynamic Amount Display (Point 3) -->
+                                                        <!-- If Payer: Show how much they collect back (Total - Share) OR just Net impact -->
+                                                        <!-- Requirement: "Show how much to receive or pay" -->
+
+                                                        <div class="text-right">
+                                                            <div v-if="item.isPayer"
+                                                                class="text-sm font-bold text-green-600">
+                                                                墊付 {{Number(item.amount).toLocaleString()}}，應收 {{
+                                                                (Number(item.amount) -
+                                                                (Number(item.amount)/item.splitters.length)).toLocaleString()
+                                                                }}
+                                                            </div>
+                                                            <div v-else class="text-sm font-bold text-red-400">
+                                                                應付 {{
+                                                                Math.round(Number(item.amount)/item.splitters.length).toLocaleString()
+                                                                }}
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -1172,64 +1208,62 @@
                 };
 
                 const getUserTransactions = (user) => {
-                    // Returns list of { ...item, isPayer: bool, userAmount: number }
-                    // Filter: User is payer OR User is splitter
+                    // Legacy support or fallback
                     const list = expenseList.value.filter(e => e.payer === user || e.splitters.includes(user));
+                    return list.map(e => ({
+                        ...e,
+                        isPayer: e.payer === user,
+                        userAmount: e.payer === user ? Number(e.amount) : (Number(e.amount) / e.splitters.length)
+                    }));
+                };
 
-                    return list.map(e => {
-                        const isPayer = e.payer === user;
-                        // If I paid, amount is full amount paid out? User asked for "Expense Record"
-                        // If I paid $300 for 3 ppl. My valid expense is $100. But cash flow is -$300.
-                        // User wanted "Red" background for Expense.
-                        // Let's show the "Cash Impact" on this line.
-                        // If Payer: -Full Amount.
-                        // If Splitter (not payer): "Consumed" $100? No cash flow yet.
-                        // Wait, user said: "Below list records every expense... with target object"
-                        // If I am just a splitter, showing it might be confusing if it's not a settlement.
-                        // BUT, if I don't show it, I don't know what I owe.
-                        // Let's refine based on "Red/Green".
-                        // Logic:
-                        // Show all items involved.
-                        // Display Amount:
-                        //   If Payer: Show Total Amount Paid (Red) - "Paid ¥3000"
-                        //   If Splitter (not Payer): Show My Share (Green?? No, Debt).
+                // NEW: Grouped Transactions Logic (Point 2)
+                const expandedCategories = ref({}); // Key: "User-CategoryId" -> bool
 
-                        // Revised Display Logic based on "Expense=Red, Income=Green" mismatch:
-                        // Maybe user implies "Expense" = Spending money. "Income" = Receiving money.
-                        // Standard consumption is NOT income.
-                        // Let's Stick to:
-                        // Payer View: I paid $300. (Red).
-                        // Splitter View: I owe $100. (Gray/Neutral? Or Red?).
+                const toggleExpCategory = (user, catId) => {
+                    const key = `${user}-${catId}`;
+                    expandedCategories.value[key] = !expandedCategories.value[key];
+                };
 
-                        // Let's try this:
-                        // Only show if Payer? No.
-                        // User asked for "Expense Record... per user".
-                        // Let's show raw transaction.
-                        // If Payer: Amount = Total. Color = Red.
-                        // If Not Payer: Amount = Share. Color = Orange (Owe).
+                const getUserTransactionsGrouped = (user) => {
+                    // 1. Get all relevant transactions
+                    const rawList = expenseList.value.filter(e => e.payer === user || e.splitters.includes(user));
 
-                        // Wait, "Income Green". When do I get Income?
-                        // Only if someone pays ME?
-                        // Or maybe "Negative Expense"?
+                    // 2. Group by Category
+                    const groups = {}; // { catId: { id, name, totalShare, items: [] } }
 
-                        // Let's implement generic view:
-                        // Items sorted by date.
-                        // If Payer -> Red.
-                        // If Not Payer -> Green (Benefit? No).
+                    rawList.forEach(item => {
+                        const catId = item.category || 'other';
+                        if (!groups[catId]) {
+                            const catStyle = getCategoryStyle(catId);
+                            groups[catId] = {
+                                id: catId,
+                                name: catStyle.name,
+                                style: catStyle,
+                                totalShare: 0,
+                                items: []
+                            };
+                        }
 
-                        // Let's stick to the prompt's simplicity:
-                        // "Expense Record background Red, Income Green".
-                        // I will assume for now:
-                        // If (Payer == User) => Red (Outflow).
-                        // If (Payer != User) => Green (Inflow / Benefit received).
-                        // This matches "Income" as "Value Received".
+                        // Calculate "My Share" for the category total
+                        // If I paid $300 for 3 people, my share is $100.
+                        // If I didn't pay but was a splitter of $300 (3 ppl), my share is $100.
+                        const myShare = Number(item.amount) / item.splitters.length;
+                        groups[catId].totalShare += myShare;
 
-                        return {
-                            ...e,
-                            isPayer,
-                            userAmount: isPayer ? Number(e.amount) : (Number(e.amount) / e.splitters.length)
-                        };
+                        // Add Item
+                        groups[catId].items.push({
+                            ...item,
+                            isPayer: item.payer === user
+                        });
                     });
+
+                    // 3. Convert to Array & Sort
+                    return Object.values(groups).map(g => ({
+                        ...g,
+                        totalShare: Math.round(g.totalShare),
+                        items: g.items.sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time))
+                    })).sort((a, b) => b.totalShare - a.totalShare);
                 };
 
                 const getPersonalTotal = (user) => {
@@ -1373,7 +1407,8 @@
                     shoppingList, currentShoppingUser, showAddShoppingModal, newShoppingItem, handleImageUpload, addShoppingItem, showEditShoppingModal, editingShoppingItem, saveShoppingEdit, deleteShoppingItem, openEditShopping, showBoughtModal, selectedShoppingItem, boughtForm, openBoughtModal, confirmBought,
                     expenseList, personalExpenseList, showAddExpenseModal, newExpense, openAddExpense, editExpense, editPersonalExpense, addExpense: saveExpense, saveExpense, deleteExpense, toggleSplitUser, getUserNet, getUserTotalGroupSpend, getPairBalance, getUserTransactions, getPersonalTotal, getPersonalExpenses, openGoogleMaps,
                     syncStatus, syncToCloud, isProcessingImage, // Exposed text
-                    expandedUser, toggleExpandedUser: (user) => expandedUser.value = expandedUser.value === user ? null : user // Accordion toggle
+                    expandedUser, toggleExpandedUser: (user) => expandedUser.value = expandedUser.value === user ? null : user, // Accordion toggle
+                    expandedCategories, toggleExpCategory, getUserTransactionsGrouped // Point 2
                 };
             }
         }).mount('#app');
