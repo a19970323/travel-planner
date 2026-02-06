@@ -535,9 +535,10 @@
                                                             <div v-if="item.isPayer"
                                                                 class="text-sm font-bold text-green-600">
                                                                 墊付 {{Number(item.amount).toLocaleString()}}，應收 {{
-                                                                (Number(item.amount) -
-                                                                (Number(item.amount)/item.splitters.length)).toLocaleString()
-                                                                }}
+                                                                Math.round(Number(item.amount) -
+                                                                (item.splitters.includes(user) ?
+                                                                (Number(item.amount)/item.splitters.length) :
+                                                                0)).toLocaleString() }}
                                                             </div>
                                                             <div v-else class="text-sm font-bold text-red-400">
                                                                 應付 {{
